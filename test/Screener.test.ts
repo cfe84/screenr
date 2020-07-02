@@ -6,6 +6,7 @@ import { ScreeningResult } from "../src/contracts/ScreeningResult"
 import { Screener } from "../src/domain/Screener"
 import { MailId, Sender, IMail } from "../src/contracts/IMail"
 import { IDictionary } from "../src/contracts/IDictionary"
+import { ISenderScreeningResultProvider } from "../src/contracts/ISenderScreeningResultProvider"
 
 interface Behavior {
   result: string,
@@ -17,6 +18,17 @@ interface Behavior {
 interface ExpectedResult {
   name: string,
   behaviors: Behavior[]
+}
+
+class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
+  memory: IDictionary<ScreeningResult> = {}
+  getScreeningResultAsync = async (sender: string): Promise<ScreeningResult> => {
+    return this.memory[sender]
+  }
+  addScreeningGuidelineAsync = async (sender: string, guideline: ScreeningResult): Promise<void> => {
+    this.memory[sender] = guideline
+  }
+
 }
 
 const createMail = (mailId: MailId, sender: Sender): IMail => ({
@@ -47,7 +59,7 @@ describe("Screener", async () => {
     Reference: "Inbox.Reference",
     Rejected: "Inbox.Rejected"
   }
-  const senderScreeningProvider = td.object(["getScreeningResultAsync", "addScreeningGuidelineAsync"])
+  const senderScreeningProvider = new MemorySenderScreeningProvider()
   const mailbox = td.object(["moveMailAsync", "getMailAsync"])
   const deps = { folders: folders as unknown as IFolders, senderScreeningProvider, mailbox }
   const screener = new Screener(deps)
@@ -56,7 +68,6 @@ describe("Screener", async () => {
   const createFolderMailList = (folderName: string) =>
     availableFolders
       .map(result => {
-        td.when(senderScreeningProvider.getScreeningResultAsync(createMailSender(folderName, result))).thenResolve(results[result])
         return createMail(createMailId(folderName, result), createMailSender(folderName, result))
       })
 
@@ -88,18 +99,19 @@ describe("Screener", async () => {
       name: "Screened",
       behaviors: [
         { result: "Inbox", movedTo: folders.Inbox },
-        { result: "Unknown", movedTo: folders.Inbox },
-        { result: "Reference", movedTo: folders.Inbox },
-        { result: "Rejected", movedTo: folders.Inbox },
-        { result: "Newsletter", movedTo: folders.Inbox },
+        { result: "Unknown", movedTo: folders.Inbox, registerResult: ScreeningResult.LeaveInInbox },
+        { result: "Reference", movedTo: folders.Inbox, registerResult: ScreeningResult.LeaveInInbox },
+        { result: "Rejected", movedTo: folders.Inbox, registerResult: ScreeningResult.LeaveInInbox },
+        { result: "Newsletter", movedTo: folders.Inbox, registerResult: ScreeningResult.LeaveInInbox },
       ]
     },
   ]
 
-  expectedResults.forEach(result => {
+  await Promise.all(expectedResults.map(async result => {
     const folder = folders[result.name] as Folder
     td.when(mailbox.getMailAsync(folder)).thenResolve(createFolderMailList(result.name))
-  })
+    await Promise.all(availableFolders.map(folder => senderScreeningProvider.addScreeningGuidelineAsync(createMailSender(result.name, folder), results[folder])))
+  }))
 
   await screener.ScreenMailAsync()
 
@@ -114,15 +126,14 @@ describe("Screener", async () => {
           it(`moves ${behavior.result} to ${behavior.movedTo}`, () => td.verify(mailbox.moveMailAsync(mailId, folders[folder.name], behavior.movedTo)))
         }
         if (behavior.registerResult !== undefined) {
-          it(`registers ${behavior.result} mail to ${behavior.registerResult}`,
-            () => td.verify(senderScreeningProvider.addScreeningGuidelineAsync(mailSender, behavior.registerResult)))
-        } else {
-          it(`leaves ${behavior.result} registration unchanged`,
-            () => td.verify(senderScreeningProvider.addScreeningGuidelineAsync(mailSender, td.matchers.anything()), { times: 0 }))
+          it(`registers ${behavior.result} mail to ${behavior.registerResult}`, async () =>
+            should(await senderScreeningProvider.getScreeningResultAsync(mailSender)).eql(behavior.registerResult))
         }
       })
     })
   })
 
-  //context("Mail from sender newly registered to another folder")
+  // context("Mail from sender newly registered to another folder", () => {
+
+  // })
 })
