@@ -38,7 +38,20 @@ export class Screener {
     }))
   }
 
+  private screenFolder = async (folder: Folder, correspondingScreeningResult: ScreeningResult): Promise<void> => {
+    const mails = await this.deps.mailbox.getMailAsync(folder)
+    await Promise.all(mails.map(async mail => {
+      const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
+      if (screeningResult !== correspondingScreeningResult) {
+        await this.deps.senderScreeningProvider.addScreeningGuidelineAsync(mail.sender, correspondingScreeningResult)
+      }
+    }))
+  }
+
   ScreenMailAsync = async (): Promise<void> => {
     await this.screenInboxAsync()
+    await this.screenFolder(this.deps.folders.Newsletter, ScreeningResult.Newsletter)
+    await this.screenFolder(this.deps.folders.Rejected, ScreeningResult.Rejected)
+    await this.screenFolder(this.deps.folders.Reference, ScreeningResult.Reference)
   }
 }

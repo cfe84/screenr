@@ -10,7 +10,8 @@ import { IDictionary } from "../src/contracts/IDictionary"
 interface Behavior {
   result: string,
   moved?: boolean,
-  movedTo?: Folder
+  movedTo?: Folder,
+  registerResult?: ScreeningResult
 }
 
 interface ExpectedResult {
@@ -27,11 +28,11 @@ const createMailId = (folderName: string, result: string) => `${folderName}_${re
 const createMailSender = (folderName: string, result: string) => `${folderName}_${result}_SENDER`
 
 const results: { [key: string]: ScreeningResult } = {
-  "UNKNOWN": ScreeningResult.RequiresManualScreening,
-  "IMPORTANT": ScreeningResult.Important,
-  "REFERENCE": ScreeningResult.Reference,
-  "REJECTED": ScreeningResult.Rejected,
-  "NEWSLETTER": ScreeningResult.Newsletter
+  "Unknown": ScreeningResult.RequiresManualScreening,
+  "Inbox": ScreeningResult.LeaveInInbox,
+  "Reference": ScreeningResult.Reference,
+  "Rejected": ScreeningResult.Rejected,
+  "Newsletter": ScreeningResult.Newsletter
 }
 
 
@@ -39,43 +40,55 @@ describe("Screener", async () => {
   // given
 
   const folders: IDictionary<string> = {
-    Inbox: "INBOX",
-    ForScreening: "INBOX.ForScreening",
-    Screened: "INBOX.SCREENED",
-    Newsletter: "INBOX.Newsletters",
-    Reference: "INBOX.REFERENCE",
-    Rejected: "INBOX.REJECTED"
+    Inbox: "Inbox",
+    ForScreening: "Inbox.ForScreening",
+    Screened: "Inbox.SCREENED",
+    Newsletter: "Inbox.Newsletters",
+    Reference: "Inbox.Reference",
+    Rejected: "Inbox.Rejected"
   }
   const senderScreeningProvider = td.object(["getScreeningResultAsync", "addScreeningGuidelineAsync"])
   const mailbox = td.object(["moveMailAsync", "getMailAsync"])
   const deps = { folders: folders as unknown as IFolders, senderScreeningProvider, mailbox }
   const screener = new Screener(deps)
+  const availableFolders = ["Unknown", "Inbox", "Reference", "Rejected", "Newsletter"]
 
   const createFolderMailList = (folderName: string) =>
-    ["UNKNOWN", "IMPORTANT", "REFERENCE", "REJECTED", "NEWSLETTER"]
+    availableFolders
       .map(result => {
         td.when(senderScreeningProvider.getScreeningResultAsync(createMailSender(folderName, result))).thenResolve(results[result])
         return createMail(createMailId(folderName, result), createMailSender(folderName, result))
       })
 
+  const buildExpectedResultForFolder = (folder: string, correspondingRegistration: ScreeningResult) =>
+    ({
+      name: folder,
+      behaviors: availableFolders.map(result => ({
+        result,
+        moved: false,
+        registerResult: result === folder ? undefined : correspondingRegistration
+      }))
+    })
 
   const expectedResults: ExpectedResult[] = [
     {
       name: "Inbox",
       behaviors: [
-        { result: "IMPORTANT", moved: false },
-        { result: "UNKNOWN", movedTo: folders.ForScreening },
-        { result: "REFERENCE", movedTo: folders.Reference },
-        { result: "REJECTED", movedTo: folders.Rejected },
-        { result: "NEWSLETTER", movedTo: folders.Newsletter },
+        { result: "Inbox", moved: false },
+        { result: "Unknown", movedTo: folders.ForScreening },
+        { result: "Reference", movedTo: folders.Reference },
+        { result: "Rejected", movedTo: folders.Rejected },
+        { result: "Newsletter", movedTo: folders.Newsletter },
       ]
-    }
+    },
+    buildExpectedResultForFolder("Newsletter", ScreeningResult.Newsletter),
+    buildExpectedResultForFolder("Rejected", ScreeningResult.Rejected),
+    buildExpectedResultForFolder("Reference", ScreeningResult.Reference)
   ]
 
   expectedResults.forEach(result => {
     const folder = folders[result.name] as Folder
     td.when(mailbox.getMailAsync(folder)).thenResolve(createFolderMailList(result.name))
-
   })
 
   await screener.ScreenMailAsync()
@@ -83,18 +96,23 @@ describe("Screener", async () => {
   expectedResults.forEach(folder => {
     context(folder.name, () => {
       folder.behaviors.forEach(behavior => {
+        const mailId = createMailId(folder.name, behavior.result)
+        const mailSender = createMailSender(folder.name, behavior.result)
         if (behavior.moved === false) {
-          it(`leaves ${behavior.result} emails unmoved`, () => td.verify(deps.mailbox.moveMailAsync(createMailId(folder.name, behavior.result), folders[folder.name], td.matchers.anything()), { times: 0 }))
+          it(`leaves ${behavior.result} emails unmoved`, () => td.verify(mailbox.moveMailAsync(mailId, folders[folder.name], td.matchers.anything()), { times: 0 }))
         } else {
-          it(`moves ${behavior.result} to ${behavior.movedTo}`, () => td.verify(deps.mailbox.moveMailAsync(createMailId(folder.name, behavior.result), folders[folder.name], behavior.movedTo)))
+          it(`moves ${behavior.result} to ${behavior.movedTo}`, () => td.verify(mailbox.moveMailAsync(mailId, folders[folder.name], behavior.movedTo)))
+        }
+        if (behavior.registerResult !== undefined) {
+          it(`registers ${behavior.result} mail to ${behavior.registerResult}`,
+            () => td.verify(senderScreeningProvider.addScreeningGuidelineAsync(mailSender, behavior.registerResult)))
+        } else {
+          it(`leaves ${behavior.result} registration unchanged`,
+            () => td.verify(senderScreeningProvider.addScreeningGuidelineAsync(mailSender, td.matchers.anything()), { times: 0 }))
         }
       })
     })
   })
 
-  // context("Inbox", () => {
-  //   it("leaves important emails around", () => td.verify(deps.mailbox.moveMailAsync(createMailId("INBOX", "IMPORTANT"), folders.Inbox, td.matchers.anything()), { times: 0 }))
-  //   it("moves unknown to screening", () => td.verify(deps.mailbox.moveMailAsync(createMailId("INBOX", "UNKNOWN"), folders.Inbox, folders.ForScreening)))
-  // })
-
+  //context("Mail from sender newly registered to another folder")
 })
