@@ -1,4 +1,4 @@
-import { IMail } from "../contracts/IMail";
+import { IMail, Sender } from "../contracts/IMail";
 import { ISenderScreeningResultProvider } from "../contracts/ISenderScreeningResultProvider";
 import { IFolders, IFolderProvider, Folder } from "../contracts/IFolderProvider";
 import { IMailbox } from "../contracts/IMailbox";
@@ -9,6 +9,11 @@ export interface IScreenerDeps {
   folders: IFolders
   senderScreeningProvider: ISenderScreeningResultProvider
   mailbox: IMailbox
+}
+
+interface ScreeningGuidelineChange {
+  sender: Sender,
+  newGuideline: ScreeningResult
 }
 
 export class Screener {
@@ -38,14 +43,19 @@ export class Screener {
     }))
   }
 
-  private screenFolder = async (folder: Folder, correspondingScreeningResult: ScreeningResult): Promise<void> => {
+  private screenFolder = async (folder: Folder, correspondingScreeningResult: ScreeningResult): Promise<ScreeningGuidelineChange[]> => {
     const mails = await this.deps.mailbox.getMailAsync(folder)
+    const changes: ScreeningGuidelineChange[] = []
     await Promise.all(mails.map(async mail => {
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
       if (screeningResult !== correspondingScreeningResult) {
-        await this.deps.senderScreeningProvider.addScreeningGuidelineAsync(mail.sender, correspondingScreeningResult)
+        changes.push({
+          sender: mail.sender,
+          newGuideline: correspondingScreeningResult
+        })
       }
     }))
+    return changes
   }
 
   private getFolderForScreeningResult = (screeningResult: ScreeningResult): Folder => {
@@ -71,12 +81,26 @@ export class Screener {
     }))
   }
 
+  private applyGuidelineChanges = async (changes: ScreeningGuidelineChange[]) => {
+    await Promise.all(changes.map(async change =>
+      await this.deps.senderScreeningProvider.addScreeningGuidelineAsync(change.sender, change.newGuideline)
+    ))
+  }
+
   ScreenMailAsync = async (): Promise<void> => {
-    await this.screenInboxAsync()
-    await this.screenFolder(this.deps.folders.Newsletter, ScreeningResult.Newsletter)
-    await this.screenFolder(this.deps.folders.Rejected, ScreeningResult.Rejected)
-    await this.screenFolder(this.deps.folders.Reference, ScreeningResult.Reference)
-    await this.screenFolder(this.deps.folders.Screened, ScreeningResult.LeaveInInbox)
+    const changes = ([] as ScreeningGuidelineChange[]).concat(
+      await this.screenFolder(this.deps.folders.Newsletter, ScreeningResult.Newsletter),
+      await this.screenFolder(this.deps.folders.Rejected, ScreeningResult.Rejected),
+      await this.screenFolder(this.deps.folders.Reference, ScreeningResult.Reference),
+      await this.screenFolder(this.deps.folders.Screened, ScreeningResult.LeaveInInbox),
+    )
+
+    await this.applyGuidelineChanges(changes)
+
+    await this.moveMailsAsync(this.deps.folders.Inbox)
+    await this.moveMailsAsync(this.deps.folders.Newsletter)
+    await this.moveMailsAsync(this.deps.folders.Rejected)
+    await this.moveMailsAsync(this.deps.folders.Reference)
     await this.moveMailsAsync(this.deps.folders.Screened)
   }
 }

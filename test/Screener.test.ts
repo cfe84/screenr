@@ -107,9 +107,29 @@ describe("Screener", async () => {
     },
   ]
 
+  const mail: IDictionary<IMail[]> = {}
+  expectedResults.forEach(result => mail[result.name] = createFolderMailList(result.name))
+
+  /// Check moving between folders
+  const createMovedBetweenCats_and_returnExpectedBehavior = (oldFolder: string, newFolder: string, originalRegistration: ScreeningResult) => {
+    const sender = `MOVED_FROM_${oldFolder}_TO_${newFolder}`
+    const expectedToMoveMailId = `${sender}_STILL_IN_${oldFolder}`
+    mail[oldFolder].push(createMail(expectedToMoveMailId, sender))
+    mail[newFolder].push(createMail(`${sender}_NOW_IN_${newFolder}`, sender))
+    senderScreeningProvider.addScreeningGuidelineAsync(sender, originalRegistration)
+    const expectedBehavior = () => td.verify(mailbox.moveMailAsync(expectedToMoveMailId, folders[oldFolder], folders[newFolder]))
+    return expectedBehavior
+  }
+
+  const checkSenderMovedFromRefToNewsletter = createMovedBetweenCats_and_returnExpectedBehavior("Reference", "Newsletter", ScreeningResult.Reference)
+  const checkSenderMovedFromNewsletterToRef = createMovedBetweenCats_and_returnExpectedBehavior("Newsletter", "Reference", ScreeningResult.Newsletter)
+  const checkSenderMovedFromRejectedToNewsletter = createMovedBetweenCats_and_returnExpectedBehavior("Rejected", "Newsletter", ScreeningResult.Rejected)
+  const checkSenderMovedFromInboxToRejected = createMovedBetweenCats_and_returnExpectedBehavior("Inbox", "Rejected", ScreeningResult.LeaveInInbox)
+  /// End check
+
   await Promise.all(expectedResults.map(async result => {
     const folder = folders[result.name] as Folder
-    td.when(mailbox.getMailAsync(folder)).thenResolve(createFolderMailList(result.name))
+    td.when(mailbox.getMailAsync(folder)).thenResolve(mail[result.name])
     await Promise.all(availableFolders.map(folder => senderScreeningProvider.addScreeningGuidelineAsync(createMailSender(result.name, folder), results[folder])))
   }))
 
@@ -133,7 +153,10 @@ describe("Screener", async () => {
     })
   })
 
-  // context("Mail from sender newly registered to another folder", () => {
-
-  // })
+  context("Mail from sender newly registered to another folder", () => {
+    it("Moves mails from newsletter to reference", checkSenderMovedFromNewsletterToRef)
+    it("Moves mails from reference to newsletter", checkSenderMovedFromRefToNewsletter)
+    it("Moves mails from inbox to rejected", checkSenderMovedFromInboxToRejected)
+    it("Moves mails from rejected to newsletter", checkSenderMovedFromRejectedToNewsletter)
+  })
 })
