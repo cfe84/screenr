@@ -83,7 +83,17 @@ describe("Screener", async () => {
     },
     buildExpectedResultForFolder("Newsletter", ScreeningResult.Newsletter),
     buildExpectedResultForFolder("Rejected", ScreeningResult.Rejected),
-    buildExpectedResultForFolder("Reference", ScreeningResult.Reference)
+    buildExpectedResultForFolder("Reference", ScreeningResult.Reference),
+    {
+      name: "Screened",
+      behaviors: [
+        { result: "Inbox", movedTo: folders.Inbox },
+        { result: "Unknown", movedTo: folders.Inbox },
+        { result: "Reference", movedTo: folders.Inbox },
+        { result: "Rejected", movedTo: folders.Inbox },
+        { result: "Newsletter", movedTo: folders.Inbox },
+      ]
+    },
   ]
 
   expectedResults.forEach(result => {
