@@ -102,5 +102,6 @@ export class Screener {
     await this.moveMailsAsync(this.deps.folders.Rejected)
     await this.moveMailsAsync(this.deps.folders.Reference)
     await this.moveMailsAsync(this.deps.folders.Screened)
+    await this.moveMailsAsync(this.deps.folders.ForScreening)
   }
 }

@@ -10,7 +10,8 @@
     "webpack": "npx webpack",
     "clean": "rm -rf dist/",
     "rebuild": "npm run clean && npm run build",
-    "prepublish": "npm run rebuild"
+    "prepublish": "npm run rebuild",
+    "start": "npm run build && node ./dist/application/app.js"
   },
   "repository": {
     "type": "git",
@@ -35,6 +36,7 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
-    "@types/should": "^13.0.0"
+    "@types/should": "^13.0.0",
+    "emailjs-imap-client": "^3.1.0"
   }
 }

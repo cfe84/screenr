@@ -105,6 +105,16 @@ describe("Screener", async () => {
         { result: "Newsletter", movedTo: folders.Inbox, registerResult: ScreeningResult.LeaveInInbox },
       ]
     },
+    {
+      name: "ForScreening",
+      behaviors: [
+        { result: "Inbox", movedTo: folders.Inbox },
+        { result: "Unknown", moved: false },
+        { result: "Reference", movedTo: folders.Reference },
+        { result: "Rejected", movedTo: folders.Rejected },
+        { result: "Newsletter", movedTo: folders.Newsletter },
+      ]
+    },
   ]
 
   const mail: IDictionary<IMail[]> = {}
@@ -125,6 +135,7 @@ describe("Screener", async () => {
   const checkSenderMovedFromNewsletterToRef = createMovedBetweenCats_and_returnExpectedBehavior("Newsletter", "Reference", ScreeningResult.Newsletter)
   const checkSenderMovedFromRejectedToNewsletter = createMovedBetweenCats_and_returnExpectedBehavior("Rejected", "Newsletter", ScreeningResult.Rejected)
   const checkSenderMovedFromInboxToRejected = createMovedBetweenCats_and_returnExpectedBehavior("Inbox", "Rejected", ScreeningResult.LeaveInInbox)
+  const checkSenderMovedFromForScreeningToRejected = createMovedBetweenCats_and_returnExpectedBehavior("ForScreening", "Rejected", ScreeningResult.RequiresManualScreening)
   /// End check
 
   await Promise.all(expectedResults.map(async result => {
@@ -158,5 +169,6 @@ describe("Screener", async () => {
     it("Moves mails from reference to newsletter", checkSenderMovedFromRefToNewsletter)
     it("Moves mails from inbox to rejected", checkSenderMovedFromInboxToRejected)
     it("Moves mails from rejected to newsletter", checkSenderMovedFromRejectedToNewsletter)
+    it("Moves mails from for screening to rejected", checkSenderMovedFromForScreeningToRejected)
   })
 })
