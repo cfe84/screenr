@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@types/should": "^13.0.0",
-    "emailjs-imap-client": "^3.1.0"
+    "emailjs-imap-client": "^3.1.0",
+    "imap-simple": "^5.0.0"
   }
 }

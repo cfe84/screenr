@@ -61,7 +61,8 @@ describe("Screener", async () => {
   }
   const senderScreeningProvider = new MemorySenderScreeningProvider()
   const mailbox = td.object(["moveMailAsync", "getMailAsync", "connectAsync", "disconnectAsync"])
-  const deps = { folders: folders as unknown as IFolders, senderScreeningProvider, mailbox }
+  const log = td.object(["log", "warn", "error"])
+  const deps = { folders: folders as unknown as IFolders, senderScreeningProvider, mailbox, log }
   const screener = new Screener(deps)
   const availableFolders = ["Unknown", "Inbox", "Reference", "Rejected", "Newsletter"]
 
@@ -138,6 +139,10 @@ describe("Screener", async () => {
   const checkSenderMovedFromForScreeningToRejected = createMovedBetweenCats_and_returnExpectedBehavior("ForScreening", "Rejected", ScreeningResult.RequiresManualScreening)
   /// End check
 
+  /// Check rejecting message move doesn't break the whole flow.
+  createMovedBetweenCats_and_returnExpectedBehavior("Rejected", "Reference", ScreeningResult.Rejected)
+  td.when(mailbox.moveMailAsync(`MOVED_FROM_Rejected_TO_Reference_STILL_IN_Rejected`, folders.Rejected, folders.Reference)).thenReject(Error("MOVE_ERROR"))
+
   await Promise.all(expectedResults.map(async result => {
     const folder = folders[result.name] as Folder
     td.when(mailbox.getMailAsync(folder)).thenResolve(mail[result.name])
@@ -175,5 +180,9 @@ describe("Screener", async () => {
     it("Moves mails from inbox to rejected", checkSenderMovedFromInboxToRejected)
     it("Moves mails from rejected to newsletter", checkSenderMovedFromRejectedToNewsletter)
     it("Moves mails from for screening to rejected", checkSenderMovedFromForScreeningToRejected)
+  })
+
+  context("Resilience", () => {
+    it("Logged an issue when moving", () => td.verify(log.error(td.matchers.contains("MOVE_ERROR"))))
   })
 })

@@ -4,11 +4,13 @@ import { IFolders, IFolderProvider, Folder } from "../contracts/IFolderProvider"
 import { IMailbox } from "../contracts/IMailbox";
 import { ScreeningResult } from "../contracts/ScreeningResult";
 import { IDictionary } from "../contracts/IDictionary";
+import { ILogger } from "../contracts/ILogger";
 
 export interface IScreenerDeps {
   folders: IFolders
   senderScreeningProvider: ISenderScreeningResultProvider
   mailbox: IMailbox
+  log: ILogger
 }
 
 interface ScreeningGuidelineChange {
@@ -53,7 +55,12 @@ export class Screener {
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
       const targetFolder = this.getFolderForScreeningResult(screeningResult)
       if (folder !== targetFolder) {
-        await this.deps.mailbox.moveMailAsync(mail.mailId, folder, targetFolder)
+        try {
+          await this.deps.mailbox.moveMailAsync(mail.mailId, folder, targetFolder)
+        }
+        catch (error) {
+          this.deps.log.error(`Couldn't move ${mail.mailId} from ${mail.sender}: ${error}.`)
+        }
       }
     }
   }
@@ -93,7 +100,7 @@ export class Screener {
       await this.moveMailsAsync(this.deps.folders.Screened, mails[this.deps.folders.Screened])
       await this.moveMailsAsync(this.deps.folders.ForScreening, mails[this.deps.folders.ForScreening])
     } catch (error) {
-      console.error(error)
+      this.deps.log.error(error)
     }
     await this.deps.mailbox.disconnectAsync()
   }

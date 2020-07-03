@@ -18,9 +18,13 @@ export class ImapTools {
     return from
   }
   static mapResponseToMail(response: any): IMail {
-    return {
+    const mail = {
       mailId: `${response.uid}`,
       sender: ImapTools.parseFrom(response["body[header.fields (from)]"])
     } as IMail
+    if (!mail.sender) {
+      console.error(`Error: Cannot parse sender in ${JSON.stringify(response)}`)
+    }
+    return mail;
   }
 }

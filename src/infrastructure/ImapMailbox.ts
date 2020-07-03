@@ -43,13 +43,21 @@ export class ImapMailbox implements IMailbox {
       .then(console.log("Closed connection"))
   }
 
-  moveMailAsync(mailId: string, fromFolder: string, toFolder: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.client.onerror = (error: any) => reject(error)
-      this.client.moveMessages(fromFolder, mailId, toFolder, { byUid: true })
-        .then(() => { resolve() })
-        .catch((error: any) => console.error(error))
-    })
+  moveMailAsync = async (mailId: string, fromFolder: string, toFolder: string): Promise<void> => {
+    this.client.onerror = (error: any) => {
+      console.error(`Error at client level caught while moving message ${mailId} from ${fromFolder}: ${error}`)
+    }
+    try {
+      await this.client.moveMessages(fromFolder, mailId, toFolder, { byUid: true })
+    } catch (error) {
+      console.error(`Error caught while moving message ${mailId} from ${fromFolder}: ${error}`)
+      if (error.message.indexOf("Socket closed unexpectedly!") >= 0 || error.message.indexOf("Socket timed out!") >= 0) {
+        console.error("Socket disconnected, reconnecting")
+        await this.disconnectAsync()
+        await this.connectAsync()
+      }
+      throw error
+    }
   }
 
   getMailAsync = (inFolder: string): Promise<IMail[]> => {
