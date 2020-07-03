@@ -48,13 +48,14 @@ export class Screener {
   }
 
   private moveMailsAsync = async (folder: Folder, mails: IMail[]): Promise<void> => {
-    await Promise.all(mails.map(async mail => {
+    for (let i = 0; i < mails.length; i++) {
+      const mail = mails[i]
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
       const targetFolder = this.getFolderForScreeningResult(screeningResult)
       if (folder !== targetFolder) {
         await this.deps.mailbox.moveMailAsync(mail.mailId, folder, targetFolder)
       }
-    }))
+    }
   }
 
   private applyGuidelineChanges = async (changes: ScreeningGuidelineChange[]) => {
@@ -68,8 +69,8 @@ export class Screener {
 
     try {
       const mails: IDictionary<IMail[]> = {}
-      mails[this.deps.folders.ForScreening] = await this.deps.mailbox.getMailAsync(this.deps.folders.ForScreening)
       mails[this.deps.folders.Inbox] = await this.deps.mailbox.getMailAsync(this.deps.folders.Inbox)
+      mails[this.deps.folders.ForScreening] = await this.deps.mailbox.getMailAsync(this.deps.folders.ForScreening)
       mails[this.deps.folders.Newsletter] = await this.deps.mailbox.getMailAsync(this.deps.folders.Newsletter)
       mails[this.deps.folders.Reference] = await this.deps.mailbox.getMailAsync(this.deps.folders.Reference)
       mails[this.deps.folders.Rejected] = await this.deps.mailbox.getMailAsync(this.deps.folders.Rejected)

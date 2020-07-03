@@ -1,9 +1,12 @@
 import { IMail, Sender } from "../contracts/IMail";
 
 export class ImapTools {
-  private static parseFrom(from: string): Sender {
+  static parseFrom(from: string): Sender {
     const regex1 = /<([^>]+)/
-    const regex2 = /From: ([^\r]+)\r/
+    const regex2 = /From: ([^\r]+)(?:\r|^)/
+    if (!from) {
+      return from
+    }
     let address = from.match(regex1)
     if (address) {
       return address[1]
