@@ -3,6 +3,7 @@ import { IMailbox } from "../contracts/IMailbox";
 import { default as ImapClient } from "emailjs-imap-client"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
+import { Console } from "console";
 
 export interface ImapMailboxProps {
   host: string,
@@ -11,25 +12,36 @@ export interface ImapMailboxProps {
   password: string
 }
 
+const createClient = (props: ImapMailboxProps) => new ImapClient(props.host, props.port, {
+  auth: {
+    user: props.user,
+    pass: props.password
+  },
+  requireTLS: true
+})
+
 export class ImapMailbox implements IMailbox {
   static ConnectAsync(props: ImapMailboxProps): Promise<ImapMailbox> {
-    var client = new ImapClient(props.host, props.port, {
-      auth: {
-        user: props.user,
-        pass: props.password
-      },
-      requireTLS: true
-    })
+    var client = createClient(props)
 
     return new Promise((resolve, reject) => {
       client.onerror = (error: any) => console.error(error)
-      client.connect().then(() => {
-        resolve(new ImapMailbox(client))
-      })
+      resolve(new ImapMailbox(client, props))
     })
   }
 
-  private constructor(private client: any) { }
+  private constructor(private client: any, private props: ImapMailboxProps) { }
+
+  connectAsync(): Promise<void> {
+    this.client = createClient(this.props)
+    return this.client.connect()
+      .then(console.log("Opened connection"))
+
+  }
+  disconnectAsync(): Promise<void> {
+    return this.client.close()
+      .then(console.log("Closed connection"))
+  }
 
   moveMailAsync(mailId: string, fromFolder: string, toFolder: string): Promise<void> {
     return new Promise((resolve, reject) => {

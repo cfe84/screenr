@@ -60,7 +60,7 @@ describe("Screener", async () => {
     Rejected: "Inbox.Rejected"
   }
   const senderScreeningProvider = new MemorySenderScreeningProvider()
-  const mailbox = td.object(["moveMailAsync", "getMailAsync"])
+  const mailbox = td.object(["moveMailAsync", "getMailAsync", "connectAsync", "disconnectAsync"])
   const deps = { folders: folders as unknown as IFolders, senderScreeningProvider, mailbox }
   const screener = new Screener(deps)
   const availableFolders = ["Unknown", "Inbox", "Reference", "Rejected", "Newsletter"]
@@ -145,6 +145,11 @@ describe("Screener", async () => {
   }))
 
   await screener.ScreenMailAsync()
+
+  it("connects and disconnects", () => {
+    td.verify(mailbox.connectAsync())
+    td.verify(mailbox.disconnectAsync())
+  })
 
   expectedResults.forEach(folder => {
     context(folder.name, () => {

@@ -21,30 +21,7 @@ export class Screener {
 
   }
 
-  private screenInboxAsync = async (): Promise<void> => {
-    const mails = await this.deps.mailbox.getMailAsync(this.deps.folders.Inbox)
-    await Promise.all(mails.map(async mail => {
-      const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
-      switch (screeningResult) {
-        case ScreeningResult.RequiresManualScreening:
-          await this.deps.mailbox.moveMailAsync(mail.mailId, this.deps.folders.Inbox, this.deps.folders.ForScreening)
-          break
-        case ScreeningResult.Reference:
-          await this.deps.mailbox.moveMailAsync(mail.mailId, this.deps.folders.Inbox, this.deps.folders.Reference)
-          break
-        case ScreeningResult.Newsletter:
-          await this.deps.mailbox.moveMailAsync(mail.mailId, this.deps.folders.Inbox, this.deps.folders.Newsletter)
-          break
-        case ScreeningResult.Rejected:
-          await this.deps.mailbox.moveMailAsync(mail.mailId, this.deps.folders.Inbox, this.deps.folders.Rejected)
-          break
-        default:
-      }
-    }))
-  }
-
-  private screenFolder = async (folder: Folder, correspondingScreeningResult: ScreeningResult): Promise<ScreeningGuidelineChange[]> => {
-    const mails = await this.deps.mailbox.getMailAsync(folder)
+  private screenFolder = async (mails: IMail[], correspondingScreeningResult: ScreeningResult): Promise<ScreeningGuidelineChange[]> => {
     const changes: ScreeningGuidelineChange[] = []
     await Promise.all(mails.map(async mail => {
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
@@ -70,8 +47,7 @@ export class Screener {
     }
   }
 
-  private moveMailsAsync = async (folder: Folder): Promise<void> => {
-    const mails = await this.deps.mailbox.getMailAsync(folder)
+  private moveMailsAsync = async (folder: Folder, mails: IMail[]): Promise<void> => {
     await Promise.all(mails.map(async mail => {
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
       const targetFolder = this.getFolderForScreeningResult(screeningResult)
@@ -88,20 +64,36 @@ export class Screener {
   }
 
   ScreenMailAsync = async (): Promise<void> => {
-    const changes = ([] as ScreeningGuidelineChange[]).concat(
-      await this.screenFolder(this.deps.folders.Newsletter, ScreeningResult.Newsletter),
-      await this.screenFolder(this.deps.folders.Rejected, ScreeningResult.Rejected),
-      await this.screenFolder(this.deps.folders.Reference, ScreeningResult.Reference),
-      await this.screenFolder(this.deps.folders.Screened, ScreeningResult.LeaveInInbox),
-    )
+    await this.deps.mailbox.connectAsync()
 
-    await this.applyGuidelineChanges(changes)
+    try {
+      const mails: IDictionary<IMail[]> = {}
+      mails[this.deps.folders.ForScreening] = await this.deps.mailbox.getMailAsync(this.deps.folders.ForScreening)
+      mails[this.deps.folders.Inbox] = await this.deps.mailbox.getMailAsync(this.deps.folders.Inbox)
+      mails[this.deps.folders.Newsletter] = await this.deps.mailbox.getMailAsync(this.deps.folders.Newsletter)
+      mails[this.deps.folders.Reference] = await this.deps.mailbox.getMailAsync(this.deps.folders.Reference)
+      mails[this.deps.folders.Rejected] = await this.deps.mailbox.getMailAsync(this.deps.folders.Rejected)
+      mails[this.deps.folders.Screened] = await this.deps.mailbox.getMailAsync(this.deps.folders.Screened)
 
-    await this.moveMailsAsync(this.deps.folders.Inbox)
-    await this.moveMailsAsync(this.deps.folders.Newsletter)
-    await this.moveMailsAsync(this.deps.folders.Rejected)
-    await this.moveMailsAsync(this.deps.folders.Reference)
-    await this.moveMailsAsync(this.deps.folders.Screened)
-    await this.moveMailsAsync(this.deps.folders.ForScreening)
+
+      const changes = ([] as ScreeningGuidelineChange[]).concat(
+        await this.screenFolder(mails[this.deps.folders.Newsletter], ScreeningResult.Newsletter),
+        await this.screenFolder(mails[this.deps.folders.Rejected], ScreeningResult.Rejected),
+        await this.screenFolder(mails[this.deps.folders.Reference], ScreeningResult.Reference),
+        await this.screenFolder(mails[this.deps.folders.Screened], ScreeningResult.LeaveInInbox),
+      )
+
+      await this.applyGuidelineChanges(changes)
+
+      await this.moveMailsAsync(this.deps.folders.Inbox, mails[this.deps.folders.Inbox])
+      await this.moveMailsAsync(this.deps.folders.Newsletter, mails[this.deps.folders.Newsletter])
+      await this.moveMailsAsync(this.deps.folders.Rejected, mails[this.deps.folders.Rejected])
+      await this.moveMailsAsync(this.deps.folders.Reference, mails[this.deps.folders.Reference])
+      await this.moveMailsAsync(this.deps.folders.Screened, mails[this.deps.folders.Screened])
+      await this.moveMailsAsync(this.deps.folders.ForScreening, mails[this.deps.folders.ForScreening])
+    } catch (error) {
+      console.error(error)
+    }
+    await this.deps.mailbox.disconnectAsync()
   }
 }
