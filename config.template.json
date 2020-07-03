@@ -1,0 +1,16 @@
+{
+  "imap": {
+    "host": "",
+    "port": 993,
+    "user": "",
+    "password": ""
+  },
+  "folders": {
+    "Inbox": "INBOX",
+    "ForScreening": "INBOX.ForScreening",
+    "Newsletter": "INBOX.Newsletter",
+    "Reference": "INBOX.Reference",
+    "Rejected": "INBOX.Rejected",
+    "Screened": "INBOX.Screened"
+  }
+}
