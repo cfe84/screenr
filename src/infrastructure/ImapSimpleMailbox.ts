@@ -40,24 +40,27 @@ export class ImapSimpleMailbox implements IMailbox {
     return Promise.resolve()
   }
 
-  moveMailAsync(mailId: string, fromFolder: string, toFolder: string): Promise<void> {
+  moveMailAsync = async (mailId: string, fromFolder: string, toFolder: string): Promise<void> => {
     console.log(`Moving mail ${mailId} from ${fromFolder} to ${toFolder}`)
-    return this.client.openBox(fromFolder)
-      .then(() => this.client.moveMessage(mailId, toFolder))
-      .catch((error: any) => console.error(error))
+    try {
+      await this.client.openBox(fromFolder)
+      await this.client.moveMessage(mailId, toFolder)
+    } catch (error) {
+      console.error(`Error when moving mail ${mailId}: ${error}. Trying to reconnect`)
+      await this.disconnectAsync()
+      await this.connectAsync()
+    }
   }
 
-  getMailAsync = (inFolder: string): Promise<IMail[]> => {
+  getMailAsync = async (inFolder: string): Promise<IMail[]> => {
     console.log(`Getting mails in ${inFolder}`)
-    return this.client.openBox(inFolder)
-      .then(() => this.client.search(['ALL'], { bodies: ['HEADER.FIELDS (FROM)'] }))
-      .then((res: any) => {
-        return res.map((r: any) => {
-          return {
-            mailId: r.attributes.uid,
-            sender: ImapTools.parseFrom(r.parts[0].body.from[0])
-          }
-        })
-      })
+    await this.client.openBox(inFolder)
+    const res: any = await this.client.search(['ALL'], { bodies: ['HEADER.FIELDS (FROM)'] })
+    return res.map((r: any) => {
+      return {
+        mailId: r.attributes.uid,
+        sender: ImapTools.parseFrom(r.parts[0].body.from[0])
+      }
+    })
   }
 }
