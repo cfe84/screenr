@@ -59,7 +59,7 @@ export class Screener {
           await this.deps.mailbox.moveMailAsync(mail.mailId, folder, targetFolder)
         }
         catch (error) {
-          this.deps.log.error(`Couldn't move ${mail.mailId} from ${mail.sender}: ${error}.`)
+          this.deps.log.error(`Couldn't move ${mail.mailId} sent by ${mail.sender} from ${folder} to ${targetFolder}: ${error}.`)
         }
       }
     }

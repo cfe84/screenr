@@ -5,7 +5,7 @@ import { IFolders } from "../contracts/IFolderProvider";
 import { ISenderScreeningResultProvider } from "../contracts/ISenderScreeningResultProvider";
 import { IDictionary } from "../contracts/IDictionary";
 import { ScreeningResult } from "../contracts/ScreeningResult";
-import { ImapSimpleMailbox } from "../infrastructure/ImapSimpleMailbox";
+import { FileSenderScreeningResultProvider } from "../infrastructure/FileSenderScreeningResultProvider";
 
 class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
   memory: IDictionary<ScreeningResult> = {}
@@ -15,7 +15,6 @@ class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
   addScreeningGuidelineAsync = async (sender: string, guideline: ScreeningResult): Promise<void> => {
     this.memory[sender] = guideline
   }
-
 }
 
 interface AppConfig {
@@ -31,20 +30,23 @@ export class App {
   }
   async runAsync() {
     const mailbox = await ImapMailbox.ConnectAsync(this.config.imap)
-    // const simpleMailbox = new ImapSimpleMailbox(this.config.imap)
     const folders: IFolders = this.config.folders
+    const senderScreeningProvider = new FileSenderScreeningResultProvider("senders.json")
+    const log = console
     const screener = new Screener({
       mailbox,
       folders,
-      senderScreeningProvider: new MemorySenderScreeningProvider(),
-      log: console
+      senderScreeningProvider,
+      log
     })
 
     const screenAsync = async () => {
       try {
+        log.log(`Started screening`)
         await screener.ScreenMailAsync()
+        log.log(`Screening complete`)
       } catch (error) {
-        console.error(error)
+        log.error(`Screening failed: ${error}`)
       }
       setTimeout(screenAsync, 20000)
     }

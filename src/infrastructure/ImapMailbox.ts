@@ -1,9 +1,8 @@
 import { IMailbox } from "../contracts/IMailbox";
 
-import { default as ImapClient } from "emailjs-imap-client"
+import { default as ImapClient, ImapClientLogLevel } from "emailjs-imap-client"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
-import { Console } from "console";
 
 export interface ImapMailboxProps {
   host: string,
@@ -13,6 +12,7 @@ export interface ImapMailboxProps {
 }
 
 const createClient = (props: ImapMailboxProps) => new ImapClient(props.host, props.port, {
+  logLevel: 40,
   auth: {
     user: props.user,
     pass: props.password
@@ -35,22 +35,20 @@ export class ImapMailbox implements IMailbox {
   connectAsync(): Promise<void> {
     this.client = createClient(this.props)
     return this.client.connect()
-      .then(console.log("Opened connection"))
+      .then(() => console.log("Opened connection"))
 
   }
   disconnectAsync(): Promise<void> {
     return this.client.close()
-      .then(console.log("Closed connection"))
+      .then(() => console.log("Closed connection"))
   }
 
   moveMailAsync = async (mailId: string, fromFolder: string, toFolder: string): Promise<void> => {
     this.client.onerror = (error: any) => {
-      console.error(`Error at client level caught while moving message ${mailId} from ${fromFolder}: ${error}`)
     }
     try {
       await this.client.moveMessages(fromFolder, mailId, toFolder, { byUid: true })
     } catch (error) {
-      console.error(`Error caught while moving message ${mailId} from ${fromFolder}: ${error}`)
       if (error.message.indexOf("Socket closed unexpectedly!") >= 0 || error.message.indexOf("Socket timed out!") >= 0) {
         console.error("Socket disconnected, reconnecting")
         await this.disconnectAsync()
