@@ -2,4 +2,6 @@ node_modules
 dist
 out
 config.json
+*.hide.json
 senders.json
+*.log

@@ -1,6 +1,6 @@
 {
-  "name": "progressive-kite",
-  "version": "2.5.0",
+  "name": "screenr",
+  "version": "1.0.0",
   "description": "",
   "main": "dist/src/app.js",
   "types": "dist/src/app.d.ts",

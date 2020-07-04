@@ -6,6 +6,7 @@ import { ISenderScreeningResultProvider } from "../contracts/ISenderScreeningRes
 import { IDictionary } from "../contracts/IDictionary";
 import { ScreeningResult } from "../contracts/ScreeningResult";
 import { FileSenderScreeningResultProvider } from "../infrastructure/FileSenderScreeningResultProvider";
+import { FileLogger } from "../infrastructure/FileLogger";
 
 class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
   memory: IDictionary<ScreeningResult> = {}
@@ -32,7 +33,7 @@ export class App {
     const mailbox = await ImapMailbox.ConnectAsync(this.config.imap)
     const folders: IFolders = this.config.folders
     const senderScreeningProvider = new FileSenderScreeningResultProvider("senders.json")
-    const log = console
+    const log = new FileLogger("screenr.log")
     const screener = new Screener({
       mailbox,
       folders,
