@@ -1,0 +1,32 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: screenr
+spec:
+  template:
+    metadata:
+      labels:
+        app: screenr
+    spec:
+      containers:
+      - name: screenr-container
+        image: cfe84/screenr:latest
+        env:
+        - name: SCREENR_CONFIG_FILE
+          value: {{ .Values.configFile }}
+        volumeMounts:
+        - name: azure
+          mountPath: /mnt/storage/
+      volumes:
+      - name: azure
+        azureFile:
+# read -p "Storage account name > " STORAGE_ACCOUNT_NAME && \
+# read -p " Storage account key > " STORAGE_ACCOUNT_KEY && \
+# SCREENR_NAMESPACE=screenr && \
+# kubectl -n $SCREENR_NAMESPACE create secret generic azure-secret \
+#   --from-literal=azurestorageaccountname=$STORAGE_ACCOUNT_NAME \
+#   --from-literal=azurestorageaccountkey=$STORAGE_ACCOUNT_KEY
+          secretName: azure-secret
+          shareName: share
+          readOnly: false
