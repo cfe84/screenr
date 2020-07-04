@@ -1,0 +1,6 @@
+node_modules
+out
+config.json
+*.hide.json
+senders.json
+*.log
