@@ -12,5 +12,6 @@
     "Reference": "INBOX.Reference",
     "Rejected": "INBOX.Rejected",
     "Screened": "INBOX.Screened"
-  }
+  },
+  "storageFolder": "./"
 }

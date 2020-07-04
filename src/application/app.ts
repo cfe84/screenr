@@ -1,5 +1,6 @@
 import { ImapMailbox, ImapMailboxProps } from "../infrastructure/ImapMailbox";
 import * as fs from "fs"
+import * as path from "path"
 import { Screener } from "../domain/Screener";
 import { IFolders } from "../contracts/IFolderProvider";
 import { ISenderScreeningResultProvider } from "../contracts/ISenderScreeningResultProvider";
@@ -20,7 +21,8 @@ class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
 
 interface AppConfig {
   imap: ImapMailboxProps,
-  folders: IFolders
+  folders: IFolders,
+  storageFolder: string
 }
 
 export class App {
@@ -32,8 +34,9 @@ export class App {
   async runAsync() {
     const mailbox = await ImapMailbox.ConnectAsync(this.config.imap)
     const folders: IFolders = this.config.folders
-    const senderScreeningProvider = new FileSenderScreeningResultProvider("senders.json")
-    const log = new FileLogger("screenr.log")
+    const senderScreeningProvider = new FileSenderScreeningResultProvider(path.join(this.config.storageFolder, "senders.json"))
+    // const log = new FileLogger(path.join(this.config.storageFolder, "screenr.log"))
+    const log = console
     const screener = new Screener({
       mailbox,
       folders,
@@ -55,6 +58,7 @@ export class App {
   }
 }
 
-new App("config.json").runAsync()
+const configFile = process.env["SCREENR_CONFIG_FILE"] || "config.json"
+new App(configFile).runAsync()
   .then(() => { })
   .catch((err) => console.error(err))

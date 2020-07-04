@@ -10,7 +10,7 @@
     "webpack": "npx webpack",
     "clean": "rm -rf dist/",
     "rebuild": "npm run clean && npm run build",
-    "prepublish": "npm run rebuild",
+    "prepublishOnly": "npm run rebuild",
     "start": "npm run build && node ./dist/application/app.js"
   },
   "repository": {
