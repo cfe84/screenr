@@ -17,3 +17,16 @@ It connects to an IMAP server using your credentials, and screens your mail seve
 ## Configuration
 
 Copy the `config.template.json` onto a `config.json` file.
+
+## Features
+
+- [x] File mails automatically for inbox
+  - Use a filing folder (`Screened`). Mails that have been screened are moved back to Inbox.
+  - Mails from senders that have already been screened are left in the inbox.
+- [x] File mails automatically for newsletter, references and rejected.
+  - Senders of mails moved into the newsletter, reference or rejected folders are then automatically categorized as such
+- [ ] Configure flexible folders
+  - Allow adding any folders rather than just the 3 (newsletter, reference and rejected)
+  - Support two mechanisms: 
+    1. classify mails in the folder (i.e. senders of mails placed in this folder will always be classified there),
+    2. use an intermediary `fileTo` folder (i.e. works the same way as the `screened`/`inbox` folders). The goal is to allow refiling a mail into the target folder without categorizing the corresponding sender.
