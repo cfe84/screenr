@@ -6,12 +6,15 @@
     "password": ""
   },
   "folders": {
-    "Inbox": "INBOX",
+    "Inbox": {
+      "folder": "INBOX",
+      "screeningFolder": "INBOX.Screened"
+    },
     "ForScreening": "INBOX.ForScreening",
     "Newsletter": "INBOX.Newsletter",
     "Reference": "INBOX.Reference",
-    "Rejected": "INBOX.Rejected",
-    "Screened": "INBOX.Screened"
+    "Rejected": "INBOX.Rejected"
   },
-  "storageFolder": "./"
+  "storageFolder": "./",
+  "pollFrequencySeconds": 5
 }

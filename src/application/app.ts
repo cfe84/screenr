@@ -2,12 +2,13 @@ import { ImapMailbox, ImapMailboxProps } from "../infrastructure/ImapMailbox";
 import * as fs from "fs"
 import * as path from "path"
 import { Screener } from "../domain/Screener";
-import { IFolders } from "../contracts/IFolderProvider";
 import { ISenderScreeningResultProvider } from "../contracts/ISenderScreeningResultProvider";
 import { IDictionary } from "../contracts/IDictionary";
 import { ScreeningResult } from "../contracts/ScreeningResult";
 import { FileSenderScreeningResultProvider } from "../infrastructure/FileSenderScreeningResultProvider";
-import { FileLogger } from "../infrastructure/FileLogger";
+import { IFolders } from "../contracts/IFolders";
+import { IFolderConfiguration } from "../contracts/IFolderConfiguration";
+import { Folder } from "../contracts/Folder";
 
 class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
   memory: IDictionary<ScreeningResult> = {}
@@ -19,10 +20,15 @@ class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
   }
 }
 
+interface AppConfigFolders {
+  [folderAlias: string]: string | IFolderConfiguration
+}
+
 interface AppConfig {
   imap: ImapMailboxProps,
-  folders: IFolders,
-  storageFolder: string
+  folders: AppConfigFolders,
+  storageFolder: string,
+  pollFrequencySeconds: number
 }
 
 export class App {
@@ -31,9 +37,29 @@ export class App {
     const configContent = fs.readFileSync(configFile).toString()
     this.config = JSON.parse(configContent)
   }
+
+  mapFolderConfigToIFolders(configFolders: AppConfigFolders): IFolders {
+    const aliases = Object.keys(configFolders)
+    const folders: IDictionary<IFolderConfiguration> = {}
+    aliases.forEach(alias => {
+      if (typeof configFolders[alias] === "string") {
+        folders[alias] = {
+          folder: configFolders[alias] as Folder,
+          screeningFolder: configFolders[alias] as Folder
+        }
+      } else {
+        folders[alias] = configFolders[alias] as IFolderConfiguration
+      }
+    })
+    return {
+      aliases,
+      folders
+    }
+  }
+
   async runAsync() {
     const mailbox = await ImapMailbox.ConnectAsync(this.config.imap)
-    const folders: IFolders = this.config.folders
+    const folders: IFolders = this.mapFolderConfigToIFolders(this.config.folders)
     const senderScreeningProvider = new FileSenderScreeningResultProvider(path.join(this.config.storageFolder, "senders.json"))
     // const log = new FileLogger(path.join(this.config.storageFolder, "screenr.log"))
     const log = console
@@ -52,7 +78,7 @@ export class App {
       } catch (error) {
         log.error(`Screening failed: ${error}`)
       }
-      setTimeout(screenAsync, 20000)
+      setTimeout(screenAsync, (this.config.pollFrequencySeconds * 1000) || 20000)
     }
     await screenAsync()
   }

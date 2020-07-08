@@ -1,9 +1,11 @@
-// TODO: Worth changing that to a structure that supports any kind of folders.
-export enum ScreeningResult {
+import { FolderAlias } from "./Folder";
+
+export enum ScreeningResultType {
     RequiresManualScreening = 10,
-    Rejected = 20,
-    LeaveInInbox = 30,
-    Newsletter = 40,
-    Reference = 50,
-    Spam = 99
+    TargetFolder = 20
+}
+
+export interface ScreeningResult {
+    result: ScreeningResultType
+    targetFolderAlias?: FolderAlias
 }

@@ -1,5 +1,5 @@
 import { MailId, IMail } from "./IMail";
-import { Folder } from "./IFolderProvider";
+import { Folder } from "./Folder";
 
 export interface IMailbox {
     moveMailAsync(mailId: MailId, fromFolder: Folder, toFolder: Folder): Promise<void>
