@@ -23,7 +23,7 @@ You can use a shortcut and specify the screening folder to be directly the targe
 
 ## Configuration
 
-Copy the `config.template.json` onto a `config.json` file and set the values you want.
+Copy the `config.template.json` onto a `config.json` file and set the values you want. You can specify where the config file is using the `SCREENR_CONFIG_FILE` environment variable to its full path, else Screenr will look for it in the current working directory.
 
 You can specify as many folders as you want. If you want to use the _target_ folder as the _screening_ folder, then just give the folder path as a string. E.g.:
 
