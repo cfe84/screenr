@@ -1,4 +1,5 @@
 import { ImapMailbox, ImapMailboxProps } from "../infrastructure/ImapMailbox";
+import { ImapSimpleMailbox } from "../infrastructure/ImapSimpleMailbox";
 import * as fs from "fs"
 import * as path from "path"
 import { Screener } from "../domain/Screener";
@@ -24,11 +25,14 @@ interface AppConfigFolders {
   [folderAlias: string]: string | IFolderConfiguration
 }
 
+type EmailClientType = "imapSimple" | "imap"
+
 interface AppConfig {
   imap: ImapMailboxProps,
   folders: AppConfigFolders,
   storageFolder: string,
-  pollFrequencySeconds: number
+  pollFrequencySeconds: number,
+  client?: EmailClientType
 }
 
 export class App {
@@ -57,11 +61,21 @@ export class App {
     }
   }
 
+  private createMailboxAsync = async () => {
+    switch (this.config.client) {
+      case "imapSimple":
+        return new ImapSimpleMailbox(this.config.imap)
+      case "imap":
+      case undefined:
+      default:
+        return await ImapMailbox.ConnectAsync(this.config.imap)
+    }
+  }
+
   async runAsync() {
-    const mailbox = await ImapMailbox.ConnectAsync(this.config.imap)
+    const mailbox = await this.createMailboxAsync()
     const folders: IFolders = this.mapFolderConfigToIFolders(this.config.folders)
     const senderScreeningProvider = new FileSenderScreeningResultProvider(path.join(this.config.storageFolder, "senders.json"))
-    // const log = new FileLogger(path.join(this.config.storageFolder, "screenr.log"))
     const log = console
     const screener = new Screener({
       mailbox,

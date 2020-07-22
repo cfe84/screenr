@@ -16,5 +16,6 @@
     "Rejected": "INBOX.Rejected"
   },
   "storageFolder": "./",
-  "pollFrequencySeconds": 5
+  "pollFrequencySeconds": 5,
+  "client": "imapSimple"
 }

@@ -37,6 +37,8 @@ If you want to use distinct folders, use an object:
 "Reference" : { "folder": "INBOX.Reference", "screeningFolder": "INBOX.FileIn.Reference" }
 ```
 
+Screenr supports two email client connectors for now: `imap` and `imapSimple`. The only difference is the library it's using for connecting, however I've noticed that imap is slightly faster on my person email (Dotcove) while imapSimple works with the imap head of my work's exchange server. If you have trouble connecting using one, try the other.
+
 ## Features
 
 - [x] File mails automatically for inbox
@@ -49,3 +51,8 @@ If you want to use distinct folders, use an object:
   - Support two mechanisms: 
     1. classify mails in the folder (i.e. senders of mails placed in this folder will always be classified there),
     2. use an intermediary `fileTo` folder (i.e. works the same way as the `screened`/`inbox` folders). The goal is to allow refiling a mail into the target folder without categorizing the corresponding sender.
+- [ ] Add "binary"
+- [x] Choose IMAP client
+- [ ] Display folder list on start
+- [ ] Allow SSL connection
+  - [ ] Disable certificate check (NODE_TLS_REJECT_UNAUTHORIZED=0)
