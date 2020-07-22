@@ -21,6 +21,12 @@ For each folder you specify:
 
 You can use a shortcut and specify the screening folder to be directly the target folder. The advantage of doing so is simplicity. The downside is that it will forbid you from classifying a random email into a given folder without re-directing all of the sender's mail directly there. For `Reference` mail, for example, it's probably a good idea to keep the _target_ and the _screening_ folder distinct, so you can move some of your usual contact's mail that you normally want in your _inbox_ back into your _reference_ folder.
 
+## Running it
+
+You mainly have two options:
+- Using node: install node js, then install Screenr using command `npm install -g screenr`, then run command `screenr` in the folder containing your configuration file.
+- Using docker, see [this blog post](https://feval.ca/posts/screenr).
+
 ## Configuration
 
 Copy the `config.template.json` onto a `config.json` file and set the values you want. You can specify where the config file is using the `SCREENR_CONFIG_FILE` environment variable to its full path, else Screenr will look for it in the current working directory.
@@ -57,8 +63,9 @@ To select the client you want to use, only keep this one in the configuration fi
   - Support two mechanisms: 
     1. classify mails in the folder (i.e. senders of mails placed in this folder will always be classified there),
     2. use an intermediary `fileTo` folder (i.e. works the same way as the `screened`/`inbox` folders). The goal is to allow refiling a mail into the target folder without categorizing the corresponding sender.
-- [ ] Add "binary"
+- [x] Add "binary"
 - [x] Choose IMAP client
-- [ ] Display folder list on start
+- [~] Display ≈folder list on start (only on imap simple for now)
+  - [ ] Validate configured folders
 - [x] Allow SSL connection
   - [x] Disable certificate check (NODE_TLS_REJECT_UNAUTHORIZED=0)

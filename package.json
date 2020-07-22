@@ -2,8 +2,8 @@
   "name": "screenr",
   "version": "2.0.1",
   "description": "",
-  "main": "dist/src/app.js",
-  "types": "dist/src/app.d.ts",
+  "main": "dist/application/app.js",
+  "types": "dist/application/app.d.ts",
   "scripts": {
     "test": "mocha --require ts-node/register ./test/**/*.ts",
     "build": "tsc",
@@ -12,6 +12,9 @@
     "rebuild": "npm run clean && npm run build",
     "prepublishOnly": "npm run rebuild",
     "start": "npm run build && node ./dist/application/app.js"
+  },
+  "bin": {
+    "screenr": "./bin/screenr"
   },
   "repository": {
     "type": "git",
