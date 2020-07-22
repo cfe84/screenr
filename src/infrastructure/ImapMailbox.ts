@@ -1,6 +1,6 @@
 import { IMailbox } from "../contracts/IMailbox";
 
-import { default as ImapClient, ImapClientLogLevel } from "emailjs-imap-client"
+import { default as ImapClient } from "emailjs-imap-client"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
 
@@ -8,7 +8,10 @@ export interface ImapMailboxProps {
   host: string,
   port: number,
   user: string,
-  password: string
+  password: string,
+  ca?: string,
+  validateCertificate?: boolean,
+  ssl?: boolean
 }
 
 const createClient = (props: ImapMailboxProps) => new ImapClient(props.host, props.port, {
@@ -17,11 +20,16 @@ const createClient = (props: ImapMailboxProps) => new ImapClient(props.host, pro
     user: props.user,
     pass: props.password
   },
+  useSecureTransport: props.ssl !== undefined && props.ssl,
+  ca: !!props.ca ? props.ca : undefined,
   requireTLS: true
 })
 
 export class ImapMailbox implements IMailbox {
   static ConnectAsync(props: ImapMailboxProps): Promise<ImapMailbox> {
+    if (props.validateCertificate !== undefined && !props.validateCertificate) {
+      process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+    }
     var client = createClient(props)
 
     return new Promise((resolve, reject) => {

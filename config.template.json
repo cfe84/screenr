@@ -1,9 +1,19 @@
-{
+{ // Keep only the client configuration section that you want to use.
   "imap": {
     "host": "",
     "port": 993,
     "user": "",
-    "password": ""
+    "password": "",
+    "ssl": false,
+    "ca": null,
+    "validateCertificate": true
+  },
+  "imapSimple": {
+    "host": "",
+    "port": 993,
+    "user": "",
+    "password": "",
+    "validateCertificate": true
   },
   "folders": {
     "Inbox": {
@@ -16,6 +26,5 @@
     "Rejected": "INBOX.Rejected"
   },
   "storageFolder": "./",
-  "pollFrequencySeconds": 5,
-  "client": "imapSimple"
+  "pollFrequencySeconds": 5
 }

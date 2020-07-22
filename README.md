@@ -39,6 +39,12 @@ If you want to use distinct folders, use an object:
 
 Screenr supports two email client connectors for now: `imap` and `imapSimple`. The only difference is the library it's using for connecting, however I've noticed that imap is slightly faster on my person email (Dotcove) while imapSimple works with the imap head of my work's exchange server. If you have trouble connecting using one, try the other.
 
+To select the client you want to use, only keep this one in the configuration file. 
+
+- `imap.ssl` indicates whether you want to use secured transport layer. Default is false
+- `imap.ca` allows you to set a CA root certificate for secured transport layer. Default is null.
+- `imap.validateCertificate` and `imapSimple.validateCertificate` indicate if you require a validate certificate. Default is true. This is useful if you have trouble with the local certificate store (e.g. `Error: unable to get local issuer certificate`), however not recommended for obvious security reasons.
+
 ## Features
 
 - [x] File mails automatically for inbox
@@ -54,5 +60,5 @@ Screenr supports two email client connectors for now: `imap` and `imapSimple`. T
 - [ ] Add "binary"
 - [x] Choose IMAP client
 - [ ] Display folder list on start
-- [ ] Allow SSL connection
-  - [ ] Disable certificate check (NODE_TLS_REJECT_UNAUTHORIZED=0)
+- [x] Allow SSL connection
+  - [x] Disable certificate check (NODE_TLS_REJECT_UNAUTHORIZED=0)

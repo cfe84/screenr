@@ -1,5 +1,5 @@
 import { ImapMailbox, ImapMailboxProps } from "../infrastructure/ImapMailbox";
-import { ImapSimpleMailbox } from "../infrastructure/ImapSimpleMailbox";
+import { ImapSimpleMailbox, ImapSimpleMailboxProps } from "../infrastructure/ImapSimpleMailbox";
 import * as fs from "fs"
 import * as path from "path"
 import { Screener } from "../domain/Screener";
@@ -25,14 +25,12 @@ interface AppConfigFolders {
   [folderAlias: string]: string | IFolderConfiguration
 }
 
-type EmailClientType = "imapSimple" | "imap"
-
 interface AppConfig {
-  imap: ImapMailboxProps,
+  imap?: ImapMailboxProps,
+  imapSimple?: ImapSimpleMailboxProps,
   folders: AppConfigFolders,
   storageFolder: string,
   pollFrequencySeconds: number,
-  client?: EmailClientType
 }
 
 export class App {
@@ -62,13 +60,14 @@ export class App {
   }
 
   private createMailboxAsync = async () => {
-    switch (this.config.client) {
-      case "imapSimple":
-        return new ImapSimpleMailbox(this.config.imap)
-      case "imap":
-      case undefined:
-      default:
-        return await ImapMailbox.ConnectAsync(this.config.imap)
+    if (this.config.imapSimple) {
+      return new ImapSimpleMailbox(this.config.imapSimple)
+    }
+    else if (this.config.imap) {
+      return await ImapMailbox.ConnectAsync(this.config.imap)
+    }
+    else {
+      throw Error(`Invalid configuration - no client configured`)
     }
   }
 

@@ -18,6 +18,7 @@ declare module 'emailjs-imap-client' {
     ignoreTLS?: boolean,
     requireTLS?: boolean,
     useSecureTransport?: boolean,
+    ca?: string,
     enableCompression?: boolean
   }
 

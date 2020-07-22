@@ -3,15 +3,16 @@ import * as imaps from "imap-simple"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
 
-export interface ImapMailboxProps {
+export interface ImapSimpleMailboxProps {
   host: string,
   port: number,
   user: string,
   password: string
+  validateCertificate?: boolean
 }
 
 
-const createConnectionAsync = (props: ImapMailboxProps) =>
+const createConnectionAsync = (props: ImapSimpleMailboxProps) =>
   imaps.connect({
     imap: {
       user: props.user,
@@ -19,21 +20,30 @@ const createConnectionAsync = (props: ImapMailboxProps) =>
       host: props.host,
       port: props.port,
       tls: true,
-      authTimeout: 3000
+      authTimeout: 10000
     }
   })
 
 export class ImapSimpleMailbox implements IMailbox {
-
+  private firstConnection = true;
   private client: any;
-  constructor(private props: ImapMailboxProps) { }
+  constructor(private props: ImapSimpleMailboxProps) {
+    if (props.validateCertificate !== undefined && !props.validateCertificate) {
+      process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+    }
+  }
 
-  connectAsync(): Promise<void> {
-    return createConnectionAsync(this.props).then((connection: any) => {
+  async connectAsync(): Promise<void> {
+    await createConnectionAsync(this.props).then((connection: any) => {
       this.client = connection
     })
-      .then(console.log("Opened connection to " + this.props.host))
-
+    console.log("Opened connection to " + this.props.host)
+    if (this.firstConnection) {
+      const boxes = await this.client.getBoxes()
+      console.log(`Available boxes:`)
+      console.log(boxes)
+      this.firstConnection = false
+    }
   }
   disconnectAsync(): Promise<void> {
     this.client.end()
@@ -55,11 +65,12 @@ export class ImapSimpleMailbox implements IMailbox {
   getMailAsync = async (inFolder: string): Promise<IMail[]> => {
     console.log(`Getting mails in ${inFolder}`)
     await this.client.openBox(inFolder)
-    const res: any = await this.client.search(['ALL'], { bodies: ['HEADER.FIELDS (FROM)'] })
+    const res: any = await this.client.search(['ALL'], { bodies: ['HEADER.FIELDS (FROM SENDER)'] })
     return res.map((r: any) => {
+      const sender = r.parts[0].body.sender ? r.parts[0].body.sender[0] : r.parts[0].body.from[0]
       return {
         mailId: r.attributes.uid,
-        sender: ImapTools.parseFrom(r.parts[0].body.from[0])
+        sender: ImapTools.parseFrom(sender)
       }
     })
   }
