@@ -1,6 +1,6 @@
 import { IMailbox } from "../contracts/IMailbox";
 
-import { default as ImapClient } from "emailjs-imap-client"
+import { default as ImapClient, ImapClientOptions } from "emailjs-imap-client"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
 
@@ -14,16 +14,23 @@ export interface ImapMailboxProps {
   ssl?: boolean
 }
 
-const createClient = (props: ImapMailboxProps) => new ImapClient(props.host, props.port, {
-  logLevel: 40,
-  auth: {
-    user: props.user,
-    pass: props.password
-  },
-  useSecureTransport: props.ssl !== undefined && props.ssl,
-  ca: !!props.ca ? props.ca : undefined,
-  requireTLS: true
-})
+const createClient = (props: ImapMailboxProps) => {
+  const options: ImapClientOptions = {
+    logLevel: 40,
+    auth: {
+      user: props.user,
+      pass: props.password
+    },
+    requireTLS: true
+  }
+  if (!!props.ca) {
+    options.ca = props.ca
+  }
+  if (!!props.ssl) {
+    options.useSecureTransport = true
+  }
+  return new ImapClient(props.host, props.port, options)
+}
 
 export class ImapMailbox implements IMailbox {
   static ConnectAsync(props: ImapMailboxProps): Promise<ImapMailbox> {
