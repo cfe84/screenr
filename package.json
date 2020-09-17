@@ -1,6 +1,6 @@
 {
   "name": "screenr",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "",
   "main": "dist/application/app.js",
   "types": "dist/application/app.d.ts",
@@ -23,9 +23,9 @@
   "author": "Charles Feval",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/cfe84/progressive-kite/issues"
+    "url": "https://github.com/cfe84/screenr/issues"
   },
-  "homepage": "https://github.com/cfe84/progressive-kite#readme",
+  "homepage": "https://github.com/cfe84/screenr#readme",
   "devDependencies": {
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.11.1",
