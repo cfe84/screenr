@@ -1,7 +1,7 @@
 Screenr is workflow instrumentation for your email. It works using several folders, and sorts your email based on the sender's email address.
 
 Emails received from a new sender is removed from your inbox and placed into a `For screening` folder. Your job is to screen those senders occasionally, and determine what to do with these:
-- Move the mail from senders you want to allow in your inbox into the `Screened` folder. Screenr will then move these back into the `Inbox` folder, and from now on just let them lend into the inbox safely.
+- Move the mail from senders you want to allow in your inbox into the `Screened` folder. Screenr will then move these back into the `Inbox` folder, and from now on just let them land into the inbox safely.
 - Create folders for sorting your email according to your workflow. A recommended workflow is:
   - Move the mail you care  about (newsletters, corporate communications, ...) into the `Newsletter` folder.
   - Move the mail you need to keep for reference (order confirmation, receipts, tickets) into the `Reference` folder.
@@ -13,7 +13,7 @@ You can change your mind later by just moving a mail from someone into another f
 
 ## How it works
 
-It connects to an IMAP server using your credentials, and screens your mail several times a minute. It saves what it learns onto a local file.
+It connects to an IMAP server using your credentials, and screens your mail several times a minute. It saves what it learns into a local file.
 
 For each folder you specify:
 1. A target folder (e.g. `Reference`)
