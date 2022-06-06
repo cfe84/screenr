@@ -1,9 +1,12 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: {{ .Values.namespace }}
   name: screenr
 spec:
+  selector:
+    matchLabels:
+      app: screenr
   template:
     metadata:
       labels:
