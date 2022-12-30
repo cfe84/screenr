@@ -29,7 +29,7 @@
   "devDependencies": {
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.11.1",
-    "mocha": "^7.1.1",
+    "mocha": "^10.2.0",
     "should": "^13.2.3",
     "testdouble": "^3.13.1",
     "ts-loader": "^6.2.2",
