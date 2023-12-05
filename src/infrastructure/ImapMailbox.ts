@@ -11,7 +11,7 @@ export interface ImapMailboxProps {
   password: string,
   ca?: string,
   validateCertificate?: boolean,
-  ssl?: boolean
+  ssl?: boolean,
 }
 
 const createClient = (props: ImapMailboxProps) => {

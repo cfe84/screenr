@@ -10,6 +10,7 @@ import { FileSenderScreeningResultProvider } from "../infrastructure/FileSenderS
 import { IFolders } from "../contracts/IFolders";
 import { IFolderConfiguration } from "../contracts/IFolderConfiguration";
 import { Folder } from "../contracts/Folder";
+import { FileMailbox, FileMailboxProps } from "../infrastructure/FileMailbox";
 
 class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
   memory: IDictionary<ScreeningResult> = {}
@@ -28,6 +29,7 @@ interface AppConfigFolders {
 interface AppConfig {
   imap?: ImapMailboxProps,
   imapSimple?: ImapSimpleMailboxProps,
+  fileMailbox?: FileMailboxProps,
   folders: AppConfigFolders,
   storageFolder: string,
   pollFrequencySeconds: number,
@@ -66,6 +68,9 @@ export class App {
     else if (this.config.imap) {
       return await ImapMailbox.ConnectAsync(this.config.imap)
     }
+    else if (this.config.fileMailbox) {
+      return new FileMailbox(this.config.fileMailbox)
+    }
     else {
       throw Error(`Invalid configuration - no client configured`)
     }
@@ -81,7 +86,7 @@ export class App {
       folders,
       senderScreeningProvider,
       log
-    })
+    });
 
     const screenAsync = async () => {
       try {
