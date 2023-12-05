@@ -8,6 +8,7 @@ import { IDictionary } from "../src/contracts/IDictionary"
 import { ISenderScreeningResultProvider } from "../src/contracts/ISenderScreeningResultProvider"
 import { Folder } from "../src/contracts/Folder"
 import { IFolders } from "../src/contracts/IFolders"
+import { IMailbox } from "../src/contracts/IMailbox"
 
 interface Behavior {
   result: string,
@@ -72,7 +73,7 @@ describe("Screener", async () => {
   }
 
   const senderScreeningProvider = new MemorySenderScreeningProvider()
-  const mailbox = td.object(["moveMailAsync", "getMailAsync", "connectAsync", "disconnectAsync"])
+  const mailbox = td.object<IMailbox>()
   const log = td.object(["log", "warn", "error"])
   const deps = { folders: folders as unknown as IFolders, senderScreeningProvider, mailbox, log }
   const screener = new Screener(deps)

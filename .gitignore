@@ -5,3 +5,4 @@ config.json
 *.hide.json
 senders.json
 *.log
+/data

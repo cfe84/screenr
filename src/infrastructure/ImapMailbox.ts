@@ -1,8 +1,8 @@
 import { IMailbox } from "../contracts/IMailbox";
-
 import { default as ImapClient, ImapClientOptions } from "emailjs-imap-client"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
+import { IMailContent } from "../contracts/IMailContent";
 
 export interface ImapMailboxProps {
   host: string,
@@ -45,7 +45,7 @@ export class ImapMailbox implements IMailbox {
     })
   }
 
-  private constructor(private client: any, private props: ImapMailboxProps) { }
+  private constructor(private client: ImapClient, private props: ImapMailboxProps) { }
 
   connectAsync(): Promise<void> {
     this.client = createClient(this.props)
@@ -73,15 +73,39 @@ export class ImapMailbox implements IMailbox {
     }
   }
 
-  getMailAsync = (inFolder: string): Promise<IMail[]> => {
+  getMailAsync = (inFolder: string, fromMailId: string = "1"): Promise<IMail[]> => {
     return new Promise((resolve, reject) => {
       this.client.onerror = (error: any) => reject(error)
-      this.client.listMessages(inFolder, "1:*", ["uid", 'BODY.PEEK[Header.fields (FROM)]'], { byUid: true }).then((mails: any) => {
-        resolve(mails.map(ImapTools.mapResponseToMail))
-      })
+      this.client.listMessages(inFolder, `${fromMailId}:*`, ["uid", 'BODY.PEEK[Header.fields (FROM)]'], { byUid: true })
+        .then((mails: any) => {
+          resolve(mails.map(ImapTools.mapResponseToMail))
+        })
         .catch((err: any) => {
           console.error(err)
         })
     })
   }
+
+  private async mapResponseToMailContentAsync(response: any): Promise<IMailContent> {
+    const mail = await ImapTools.getMailContent(response["body[]"]);
+    return {
+      mailId: `${response.uid}`,
+      subject: mail.subject || response["subject"],
+      content: mail.content || "",
+    }
+  }
+
+  getMailContentAsync(inFolder: string, mailIds: string[]): Promise<IMailContent[]> {
+    return new Promise((resolve, reject) => {
+      this.client.onerror = (error: any) => reject(error)
+      this.client.listMessages(inFolder, mailIds.join(","), ["UID", 'BODY.PEEK[Header.fields (SUBJECT)]', "BODY.PEEK[]"], { byUid: true })
+      .then((mails: any[]) => mails.map(this.mapResponseToMailContentAsync))
+      .then((mails: Promise<IMailContent>[]) => Promise.all(mails))
+      .then((mails: IMailContent[]) => resolve(mails))
+      .catch((err: any) => {
+        console.error(err)
+      })
+    })
+  }
+
 }

@@ -5,7 +5,7 @@
   "main": "dist/application/app.js",
   "types": "dist/application/app.d.ts",
   "scripts": {
-    "test": "mocha --require ts-node/register ./test/**/*.ts",
+    "test": "mocha --require ts-node/register ./**/*.test.ts",
     "build": "tsc",
     "webpack": "npx webpack",
     "clean": "rm -rf dist/",
@@ -27,6 +27,8 @@
   },
   "homepage": "https://github.com/cfe84/screenr#readme",
   "devDependencies": {
+    "@types/html-escaper": "^3.0.2",
+    "@types/mailparser": "^3.4.4",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.11.1",
     "mocha": "^7.1.1",
@@ -41,6 +43,8 @@
   "dependencies": {
     "@types/should": "^13.0.0",
     "emailjs-imap-client": "^3.1.0",
-    "imap-simple": "^5.0.0"
+    "html-escaper": "^3.0.3",
+    "imap-simple": "^5.0.0",
+    "mailparser": "^3.6.5"
   }
 }

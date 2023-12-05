@@ -1,5 +1,6 @@
 import * as should from "should"
 
+import { email, text } from "./data/email-1";
 import { ImapTools } from "../src/infrastructure/ImapTools"
 
 describe("Imap tools", () => {
@@ -32,5 +33,21 @@ describe("Imap tools", () => {
     // then
     should(mail.mailId).eql("3")
     should(mail.sender).eql("my@mail.com")
+  })
+
+  it("parses body", async () => {
+    // given
+    const response = {
+      "body[]": email,
+      "uid": "3",
+    };
+
+    // when
+    const mailContent = await ImapTools.mapResponseToMailContentAsync(response);
+
+    // then
+    should(mailContent.mailId).eql("3");
+    should(mailContent.subject).eql("Le numéro 1 des couteaux de cuisine dans le monde");
+    should(mailContent.content).eql(text);
   })
 })

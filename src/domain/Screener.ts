@@ -110,8 +110,6 @@ export class Screener {
     await this.deps.mailbox.disconnectAsync()
   }
 
-
-
   private async fetchAllMailsAsync() {
     const mails: IDictionary<IMail[]> = {};
     for (let i = 0; i < this.deps.folders.aliases.length; i++) {

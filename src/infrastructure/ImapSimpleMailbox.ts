@@ -2,6 +2,7 @@ import { IMailbox } from "../contracts/IMailbox";
 import * as imaps from "imap-simple"
 import { IMail } from "../contracts/IMail";
 import { ImapTools } from "./ImapTools";
+import { IMailContent } from "../contracts/IMailContent";
 
 export interface ImapSimpleMailboxProps {
   host: string,
@@ -73,5 +74,23 @@ export class ImapSimpleMailbox implements IMailbox {
         sender: ImapTools.parseFrom(sender)
       }
     })
+  }
+
+  async getMailContentAsync(inFolder: string, mailIds: string[]): Promise<IMailContent[]> {
+    await this.client.openBox(inFolder);
+    const mails = mailIds.join(",");
+    const res: any = await this.client.search(["ALL"], { bodies: ["HEADER", ''] });
+    let contents = [];
+    for(let r of res) {
+      const text = r.parts.filter((part: any) => part.which === "")[0].body;
+      const header = r.parts.filter((part: any) => part.which === "HEADER")[0].body;
+      const content = await ImapTools.getMailContent(text);
+      contents.push({
+        mailId: r.attributes.uid,
+        subject: content.subject || header.subject[0],
+        content: content.content || "",
+      });
+    };
+    return contents;
   }
 }

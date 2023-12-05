@@ -32,5 +32,6 @@ declare module 'emailjs-imap-client' {
     connect: () => Promise<void>
     close: () => Promise<void>
     moveMessages: (fromFolder: string, mailId: string, toFolder: string, options?: CommandOption) => Promise<void>
+    listMessages: (path: string, sequence: string, query: string[], options?: CommandOption) => Promise<any>
   }
 }
