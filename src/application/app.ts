@@ -2,6 +2,7 @@ import { ImapMailbox, ImapMailboxProps } from "../infrastructure/ImapMailbox";
 import { ImapSimpleMailbox, ImapSimpleMailboxProps } from "../infrastructure/ImapSimpleMailbox";
 import * as fs from "fs"
 import * as path from "path"
+import * as http from "http";
 import { Screener } from "../domain/Screener";
 import { ISenderScreeningResultProvider } from "../contracts/ISenderScreeningResultProvider";
 import { IDictionary } from "../contracts/IDictionary";
@@ -48,6 +49,8 @@ interface AppConfig {
 
 export class App {
   private config: AppConfig
+  private lastChecks: Date[] = [];
+
   constructor(configFile: string) {
     const configContent = fs.readFileSync(configFile).toString()
     this.config = JSON.parse(configContent)
@@ -70,6 +73,14 @@ export class App {
       aliases,
       folders
     }
+  }
+
+  private async startHttpServerAsync() {
+    const server = http.createServer((req, res) => {
+      res.writeHead(200, {'Content-Type': 'text/plain'});
+      res.end(`Checks every ${this.config.pollFrequencySeconds} seconds. Last checks:\n${this.lastChecks.join("\n")}`);
+    });
+    server.listen(() => console.log(`Server started on port ${JSON.stringify(server.address()!)}`));
   }
 
   private createMailboxAsync = async () => {
@@ -128,13 +139,18 @@ export class App {
       try {
         log.log(`Started screening`)
         await screener.ScreenMailAsync()
+        this.lastChecks.push(new Date());
+        while(this.lastChecks.length > 5) {
+            this.lastChecks.shift();
+        }
         log.log(`Screening complete`)
       } catch (error) {
         log.error(`Screening failed: ${error}`)
       }
       setTimeout(screenAsync, (this.config.pollFrequencySeconds * 1000) || 20000)
     }
-    await screenAsync()
+    await screenAsync();
+    this.startHttpServerAsync();
   }
 }
 

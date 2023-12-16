@@ -112,7 +112,7 @@ export class SpamDetector {
     for(let mailbox of mailboxes) {
       const mails = await this.deps.mailbox.getMailAsync(mailbox);
       for (let i = 0; i < mails.length; i += chunkSize) {
-        this.deps.log.log(`Processing ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
+        this.deps.log.log(`Training on ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
         const chunk = mails.slice(i, i + chunkSize);
         try {
           const mailContents = await this.deps.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
