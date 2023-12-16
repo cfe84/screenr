@@ -19,7 +19,7 @@ export class FileMailbox implements IMailbox {
   }
 
   private getFolder(folder: string): string {
-    if (folder === "INBOX") {
+    if (folder.toLowerCase() === "inbox") {
       folder = ""
     }
     return path.join(this.props.rootFolder, folder, "cur");

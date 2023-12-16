@@ -10,6 +10,7 @@ import { FileSenderScreeningResultProvider } from "../infrastructure/FileSenderS
 import { IFolders } from "../contracts/IFolders";
 import { IFolderConfiguration } from "../contracts/IFolderConfiguration";
 import { Folder } from "../contracts/Folder";
+import { SpamDetector } from "../domain/SpamDetector";
 import { FileMailbox, FileMailboxProps } from "../infrastructure/FileMailbox";
 
 class MemorySenderScreeningProvider implements ISenderScreeningResultProvider {
@@ -26,6 +27,13 @@ interface AppConfigFolders {
   [folderAlias: string]: string | IFolderConfiguration
 }
 
+interface SpamConfig {
+  "isSpam": string,
+  "isNotSpam": string,
+  "recycleBox": string,
+  "trainingFrequencyHours": number,
+}
+
 interface AppConfig {
   imap?: ImapMailboxProps,
   imapSimple?: ImapSimpleMailboxProps,
@@ -33,6 +41,7 @@ interface AppConfig {
   folders: AppConfigFolders,
   storageFolder: string,
   pollFrequencySeconds: number,
+  spam?: SpamConfig,
 }
 
 export class App {
@@ -81,11 +90,20 @@ export class App {
     const folders: IFolders = this.mapFolderConfigToIFolders(this.config.folders)
     const senderScreeningProvider = new FileSenderScreeningResultProvider(path.join(this.config.storageFolder, "senders.json"))
     const log = console
+    let spamDetector: SpamDetector | undefined = undefined
+
+    if (this.config.spam)
+    {
+      spamDetector = new SpamDetector(mailbox, this.config.spam.isNotSpam, this.config.spam.isSpam);
+      await spamDetector.TrainAsync()
+    }
+
     const screener = new Screener({
       mailbox,
       folders,
       senderScreeningProvider,
-      log
+      log,
+      spamDetector
     });
 
     const screenAsync = async () => {
@@ -99,6 +117,20 @@ export class App {
       setTimeout(screenAsync, (this.config.pollFrequencySeconds * 1000) || 20000)
     }
     await screenAsync()
+
+    
+
+    // const trainSpamAsync = async () => {
+    //   try {
+    //     log.log(`Started training spam`)
+    //     await spamDetector.GetSpamAsync()
+    //     log.log(`Training spam complete`)
+    //   } catch(error) {
+    //     log.error(`Training spam failed: ${error}`)
+    //   }
+    //   setTimeout(trainSpamAsync, (this.config.spam.trainingFrequencyHours * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
+    // }
+    // await trainSpamAsync();
   }
 }
 

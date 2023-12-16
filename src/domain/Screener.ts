@@ -6,12 +6,14 @@ import { IDictionary } from "../contracts/IDictionary";
 import { ILogger } from "../contracts/ILogger";
 import { FOR_SCREENING_FOLDER_ALIAS, Folder, FolderAlias, INBOX_FOLDER_ALIAS } from "../contracts/Folder";
 import { IFolders } from "../contracts/IFolders";
+import { SpamDetector } from "./SpamDetector";
 
 export interface IScreenerDeps {
   folders: IFolders
   senderScreeningProvider: ISenderScreeningResultProvider
   mailbox: IMailbox
   log: ILogger
+  spamDetector?: SpamDetector
 }
 
 interface ScreeningGuidelineChange {
@@ -46,7 +48,6 @@ export class Screener {
       return this.deps.folders.folders[screeningResult.targetFolderAlias as string].folder
     }
   }
-
 
   private async moveMails(mails: IDictionary<IMail[]>) {
     for (let i = 0; i < this.deps.folders.aliases.length; i++) {
