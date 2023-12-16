@@ -8,8 +8,14 @@ export class FileSpamTrainingStore implements ISpamTrainingStore {
   async getTrainingAsync(): Promise<ISpamTraining> {
     if (!fs.existsSync(this.filePath)) {
       return {
-        ham: {},
-        spam: {}
+        ham: {
+          map: {},
+          trainingDatasetSize: 0,
+        },
+        spam: {
+          map: {},
+          trainingDatasetSize: 0,
+        },
       }
     }
     const content = fs.readFileSync(this.filePath).toString();

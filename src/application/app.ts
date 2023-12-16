@@ -33,6 +33,7 @@ interface SpamConfig {
   "isHam": string,
   "recycleBox": string,
   "trainingFrequencyHours": number,
+  "trainingDatasetSizeLimit": number,
 }
 
 interface AppConfig {
@@ -101,7 +102,7 @@ export class App {
         log,
         spamTrainingProvider: spamTrainingStore
       }
-      spamDetector = await SpamDetector.CreateAsync(deps, this.config.spam.isHam, this.config.spam.isSpam);
+      spamDetector = await SpamDetector.CreateAsync(deps, this.config.spam.isHam, this.config.spam.isSpam, this.config.spam.trainingDatasetSizeLimit || undefined);
       const trainSpamAsync = async () => {
         try {
           log.log(`Started training spam`)

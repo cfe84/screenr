@@ -1,4 +1,6 @@
+import { ISpamTrainingDataset } from "./ISpamTrainingDataset"
+
 export interface ISpamTraining {
-  ham: Record<string, number>
-  spam: Record<string, number>
+  ham: ISpamTrainingDataset,
+  spam: ISpamTrainingDataset,
 }
