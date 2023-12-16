@@ -3,54 +3,63 @@ import * as cld from "cld";
 import { Stemmer, Languages } from "multilingual-stemmer";
 import { IMailbox } from "../contracts/IMailbox";
 import { IMailContent } from "../contracts/IMailContent";
+import { ILogger } from "../contracts/ILogger";
+import { ISpamTrainingStore } from "../contracts/ISpamTrainingStore";
+import { ISpamTraining } from "../contracts/ISpamTraining";
 
-const chunkSize = 10;
+const chunkSize = 25;
 const SINGLE_CHARACTER = "SINGLE_CHAR";
 const NON_ALPHA_CHARACTER = "NON_ALPHA";
 const IGNORE_TOKENS = ["", SINGLE_CHARACTER, NON_ALPHA_CHARACTER];
 
 const TOKEN_CHAIN_LENGTH = { min: 2, max: 4 }
 
-export class SpamDetector {
-private spamMap: Record<string, number> = {};
-private hamMap: Record<string, number> = {};
+export interface SpamDetectorDeps {
+  mailbox: IMailbox
+  log: ILogger
+  spamTrainingProvider: ISpamTrainingStore
+}
 
-  constructor(private mailbox: IMailbox, private referenceFolder: string, private spamFolder: string) { }
+export class SpamDetector {
+  static async CreateAsync(deps: SpamDetectorDeps, referenceFolder: string, spamFolder: string): Promise<SpamDetector> {
+    const spamTraining = await deps.spamTrainingProvider.getTrainingAsync();
+    return new SpamDetector(deps, spamTraining, referenceFolder, spamFolder);
+  }
+
+  private constructor(private deps: SpamDetectorDeps, private spamTraining: ISpamTraining, private referenceFolder: string, private spamFolder: string) { }
 
   async TrainAsync() {
-    console.warn(`Get spam list`)
-    await this.mailbox.connectAsync();
+    this.deps.log.log(`Start training spam detector`)
+    await this.deps.mailbox.connectAsync();
 
-    this.spamMap = await this.trainOnMailboxAsync([this.spamFolder]);
-    this.hamMap = await this.trainOnMailboxAsync([this.referenceFolder]);
+    this.spamTraining.spam = await this.trainOnMailboxAsync([this.spamFolder]);
+    this.spamTraining.ham = await this.trainOnMailboxAsync([this.referenceFolder]);
+    await this.deps.spamTrainingProvider.saveTrainingAsync(this.spamTraining);
 
-    await this.checkMailboxAsync([".Newsletter"])
-
-    await this.mailbox.disconnectAsync()
-    console.warn(`Done training spam detector`);
+    await this.deps.mailbox.disconnectAsync()
+    this.deps.log.log(`Done training spam detector. Spam: ${Object.keys(this.spamTraining.spam).length} tokens, Ham: ${Object.keys(this.spamTraining.ham).length} tokens`);
   }
 
   private async checkMailboxAsync(mailboxes: string[]){
     const map: Record<string, number> = {};
     const res = [];
     for(let mailbox of mailboxes) {
-      const mails = await this.mailbox.getMailAsync(mailbox);
+      const mails = await this.deps.mailbox.getMailAsync(mailbox);
       for (let i = 0; i < mails.length; i += chunkSize) {
-        console.warn(`Processing chunk ${i} to ${i + chunkSize} of ${mails.length}`)
+        this.deps.log.log(`Processing ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
         const chunk = mails.slice(i, i + chunkSize);
         try {
-          const mailContents = await this.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
+          const mailContents = await this.deps.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
           for (let j = 0; j < mailContents.length; j++) {
             const mailContent = mailContents[j];
             const isSpam = await this.detectSpamAsync(mailContent);
             res.push({subject: mailContent.subject, isSpam})
           }
         } catch (error) {
-          console.error(error);
+          this.deps.log.error(`${error}`);
         }
       }
     }
-    console.table(res);
   }
 
   async detectSpamAsync(mail: IMailContent): Promise<boolean> {
@@ -64,11 +73,11 @@ private hamMap: Record<string, number> = {};
   }
 
   private async getSpamScore(tokens: string[]): Promise<number> {
-    return this.getScore(tokens, this.spamMap);
+    return this.getScore(tokens, this.spamTraining.spam);
   }
 
   private async getHamScore(tokens: string[]): Promise<number> {
-    return this.getScore(tokens, this.hamMap);
+    return this.getScore(tokens, this.spamTraining.ham);
   }
 
   private async getScore(tokens: string[], map: Record<string, number>): Promise<number> {
@@ -98,18 +107,18 @@ private hamMap: Record<string, number> = {};
   private async trainOnMailboxAsync(mailboxes: string[]): Promise<Record<string, number>> {
       const map: Record<string, number> = {};
       for(let mailbox of mailboxes) {
-      const mails = await this.mailbox.getMailAsync(mailbox);
+      const mails = await this.deps.mailbox.getMailAsync(mailbox);
       for (let i = 0; i < mails.length; i += chunkSize) {
-        console.warn(`Processing chunk ${i} to ${i + chunkSize} of ${mails.length}`)
+        this.deps.log.log(`Processing ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
         const chunk = mails.slice(i, i + chunkSize);
         try {
-          const mailContents = await this.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
+          const mailContents = await this.deps.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
           for (let j = 0; j < mailContents.length; j++) {
             const mailContent = mailContents[j];
             await this.trainOnMessage(mailContent, map);
           }
         } catch (error) {
-          console.error(error);
+          this.deps.log.error(`${error}`);
         }
       }
       Object.keys(map).forEach(key => {
