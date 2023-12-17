@@ -76,11 +76,13 @@ export class App {
   }
 
   private async startHttpServerAsync() {
+    console.log(`Starting http server`)
     const server = http.createServer((req, res) => {
       res.writeHead(200, {'Content-Type': 'text/plain'});
       res.end(`Checks every ${this.config.pollFrequencySeconds} seconds. Last checks:\n${this.lastChecks.join("\n")}`);
     });
-    server.listen(() => console.log(`Server started on port ${JSON.stringify(server.address()!)}`));
+    const port = process.env["PORT"] || 8080;
+    server.listen(port, () => console.log(`Server started on port ${JSON.stringify(server.address()!)}`));
   }
 
   private createMailboxAsync = async () => {
