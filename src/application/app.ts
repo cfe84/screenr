@@ -99,6 +99,7 @@ export class App {
   }
 
   async runAsync() {
+    await this.startHttpServerAsync();
     const mailbox = await this.createMailboxAsync()
     const folders: IFolders = this.mapFolderConfigToIFolders(this.config.folders)
     const senderScreeningProvider = new FileSenderScreeningResultProvider(path.join(this.config.storageFolder, "senders.json"))
@@ -152,7 +153,6 @@ export class App {
       }
       setTimeout(() => trainSpamAsync().then(), 10);
     }
-    await this.startHttpServerAsync();
   }
 }
 
