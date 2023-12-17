@@ -114,17 +114,6 @@ export class App {
         spamTrainingProvider: spamTrainingStore
       }
       spamDetector = await SpamDetector.CreateAsync(deps, this.config.spam.isHam, this.config.spam.isSpam, this.config.spam.trainingDatasetSizeLimit || undefined);
-      const trainSpamAsync = async () => {
-        try {
-          log.log(`Started training spam`)
-          await spamDetector?.TrainAsync();
-          log.log(`Training spam complete`)
-        } catch(error) {
-          log.error(`Training spam failed: ${error}`)
-        }
-        setTimeout(() => trainSpamAsync().then(), (this.config.spam!.trainingFrequencyHours * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
-      }
-      setTimeout(() => trainSpamAsync().then(), 10);
     }
 
     const screener = new Screener({
@@ -150,6 +139,19 @@ export class App {
       setTimeout(screenAsync, (this.config.pollFrequencySeconds * 1000) || 20000)
     }
     await screenAsync();
+    if (spamDetector) {
+      const trainSpamAsync = async () => {
+        try {
+          log.log(`Started training spam`)
+          await spamDetector?.TrainAsync();
+          log.log(`Training spam complete`)
+        } catch(error) {
+          log.error(`Training spam failed: ${error}`)
+        }
+        setTimeout(() => trainSpamAsync().then(), (this.config.spam!.trainingFrequencyHours * 60 * 60 * 1000) || 24 * 60 * 60 * 1000);
+      }
+      setTimeout(() => trainSpamAsync().then(), 10);
+    }
     this.startHttpServerAsync();
   }
 }
