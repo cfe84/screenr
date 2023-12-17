@@ -1,5 +1,5 @@
-import * as removeAccents from "remove-accents";
-import * as cld from "cld";
+import removeAccents from "remove-accents";
+import LanguageDetect = require("languagedetect");
 import { Stemmer, Languages } from "multilingual-stemmer";
 import { IMailbox } from "../contracts/IMailbox";
 import { IMailContent } from "../contracts/IMailContent";
@@ -13,7 +13,7 @@ const SINGLE_CHARACTER = "SINGLE_CHAR";
 const NON_ALPHA_CHARACTER = "NON_ALPHA";
 const URL_TOKEN = "URLTOKEN";
 const IGNORE_TOKENS = ["", SINGLE_CHARACTER, NON_ALPHA_CHARACTER];
-
+const languageDetector = new LanguageDetect();
 const TOKEN_CHAIN_LENGTH = { min: 2, max: 4 }
 
 export interface SpamDetectorDeps {
@@ -148,9 +148,9 @@ export class SpamDetector {
   }
 
   private async tokenize(text: string): Promise<string[]> {
-    const languages = await (cld.detect(text));
-    const isFrench = languages.languages.some(language => language.code === "fr" && language.percent > 30);
-    const isGerman = languages.languages.some(language => language.code === "de" && language.percent > 30);
+    const languages = languageDetector.detect(text);
+    const isFrench = languages.some(language => language[0] === "french" && language[1] > .3);
+    const isGerman = languages.some(language => language[0] === "german" && language[1] > .3);
     const stemmer = isGerman ? new Stemmer(Languages.German) : isFrench ? new Stemmer(Languages.French) : new Stemmer(Languages.English);
     return removeAccents(text)
       .replace(/(https?:\/\/[^\s]+)/g, ` ${URL_TOKEN} `)
