@@ -152,7 +152,7 @@ export class App {
       }
       setTimeout(() => trainSpamAsync().then(), 10);
     }
-    this.startHttpServerAsync();
+    await this.startHttpServerAsync();
   }
 }
 
