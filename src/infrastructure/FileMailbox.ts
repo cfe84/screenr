@@ -11,6 +11,10 @@ export interface FileMailboxProps {
   rootFolder: string,
 }
 
+type Cache = Record<number, string>;
+
+const cacheFile = "screenr_cache.json";
+
 export class FileMailbox implements IMailbox {
   constructor(private props: FileMailboxProps) {
     if (!fs.existsSync(props.rootFolder)) {
@@ -18,25 +22,10 @@ export class FileMailbox implements IMailbox {
     }
   }
 
-  private getFolder(folder: string): string {
-    if (folder.toLowerCase() === "inbox") {
-      folder = ""
-    }
-    return path.join(this.props.rootFolder, folder, "cur");
-  }
-
-  private getMailNumericalId(mailId: string): number {
-    const regex = /^(\d+)\./;
-      const match = regex.exec(mailId);
-      if (match === null) {
-        return -1;
-      }
-      return Number.parseInt(match[1]);
-  }
-
   async getMailAsync(inFolder: string, fromMailId?: string | undefined): Promise<IMail[]> {
     const fromMailIdNumber = fromMailId ? this.getMailNumericalId(fromMailId) : undefined;
     const folder = this.getFolder(inFolder)
+    const cache = this.getCache(inFolder);
     const files = fs.readdirSync(folder)
     const mails: IMail[] = []
     for (let file of files) {
@@ -47,15 +36,71 @@ export class FileMailbox implements IMailbox {
       if (fromMailIdNumber !== undefined && mailId < fromMailIdNumber) {
         continue;
       }
-      const location = path.join(folder, file);
-      const parsedMail = await simpleParser(location);
-      const mail: IMail = {
-        mailId: file,
-        sender: parsedMail.from?.value[0].address || ""
+      const mail: IMail = { mailId: file, sender: "" };
+      if (cache[mailId]) {
+        mail.sender = cache[mailId];
+      } else {
+        const location = path.join(folder, file);
+        const content = fs.readFileSync(location);
+        const parsedMail = await simpleParser(content);
+        mail.sender = parsedMail.from?.value[0].address || "";
+        cache[mailId] = mail.sender;
       }
       mails.push(mail)
     }
+    this.pruneCache(cache, files.map(file => this.getMailNumericalId(file)));
+    this.saveCache(cache, inFolder);
     return mails;
+  }
+
+  private pruneCache(cache: Cache, emailIds: number[]): void {
+    for (let key in cache) {
+      const emailId = Number.parseInt(key);
+      if (!emailIds.includes(emailId)) {
+        delete cache[key];
+      }
+    }
+  }
+
+  private saveCache(cache: Cache, inFolder: string): void {
+    const cacheFilePath = this.getCacheFilePath(inFolder);
+    const content = JSON.stringify(cache);
+    fs.writeFileSync(cacheFilePath, content);
+  }
+
+  private getCache(inFolder: string): Cache {
+    const cacheFilePath = this.getCacheFilePath(inFolder);
+    if (!fs.existsSync(cacheFilePath)) {
+      return {};
+    }
+    const content = fs.readFileSync(cacheFilePath);
+    const cache = JSON.parse(content.toString());
+    return cache;
+  }
+
+  private getCacheFilePath(inFolder: string) {
+    return path.join(this.props.rootFolder, inFolder, cacheFile);
+  }
+
+  private getFolder(folder: string): string {
+    folder = this.removeInboxFromFolder(folder);
+    return path.join(this.props.rootFolder, folder, "cur");
+  }
+
+  private removeInboxFromFolder(folder: string): string {
+    if (folder.toLowerCase().startsWith("inbox")) {
+      folder = folder.substring("inbox".length);
+    }
+    return folder;
+  }
+
+  private getMailNumericalId(mailId: string): number {
+    const regex = /^(\d+)\./;
+      const match = regex.exec(mailId);
+      if (match === null) {
+        return -1;
+      }
+      return Number.parseInt(match[1]);
   }
 
   async moveMailAsync(mailId: string, fromFolder: string, toFolder: string): Promise<void> {
