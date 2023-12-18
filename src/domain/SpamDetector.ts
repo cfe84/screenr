@@ -1,6 +1,7 @@
 import removeAccents from "remove-accents";
 import LanguageDetect = require("languagedetect");
-import { Stemmer, Languages } from "multilingual-stemmer";
+// import { Stemmer, Languages } from "multilingual-stemmer";
+import {stemmer} from "porter-stemmer";
 import { IMailbox } from "../contracts/IMailbox";
 import { IMailContent } from "../contracts/IMailContent";
 import { ILogger } from "../contracts/ILogger";
@@ -151,7 +152,7 @@ export class SpamDetector {
     const languages = languageDetector.detect(text);
     const isFrench = languages.some(language => language[0] === "french" && language[1] > .3);
     const isGerman = languages.some(language => language[0] === "german" && language[1] > .3);
-    const stemmer = isGerman ? new Stemmer(Languages.German) : isFrench ? new Stemmer(Languages.French) : new Stemmer(Languages.English);
+    // const stemmer = isGerman ? new Stemmer(Languages.German) : isFrench ? new Stemmer(Languages.French) : new Stemmer(Languages.English);
     return removeAccents(text)
       .replace(/(https?:\/\/[^\s]+)/g, ` ${URL_TOKEN} `)
       .replace(/([^a-zA-Z\s]+)/g, ` . `)
@@ -160,7 +161,7 @@ export class SpamDetector {
       .map(token => token === URL_TOKEN ? URL_TOKEN 
         : token === "." ? NON_ALPHA_CHARACTER 
         : token.length === 1 ? SINGLE_CHARACTER 
-        : stemmer.stem(token))
+        : stemmer(token))
       .filter(token => !IGNORE_TOKENS.includes(token))
       ;
   }
