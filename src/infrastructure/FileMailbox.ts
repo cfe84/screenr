@@ -47,8 +47,8 @@ export class FileMailbox implements IMailbox {
       if (fromMailIdNumber !== undefined && mailId < fromMailIdNumber) {
         continue;
       }
-      const content = fs.readFileSync(path.join(folder, file));
-      const parsedMail = await simpleParser(content);
+      const location = path.join(folder, file);
+      const parsedMail = await simpleParser(location);
       const mail: IMail = {
         mailId: file,
         sender: parsedMail.from?.value[0].address || ""

@@ -60,6 +60,7 @@ export class Screener {
   }
 
   private moveMailsInFolderAsync = async (folder: Folder, mails: IMail[]): Promise<void> => {
+    this.deps.log.debug(`moveMailsInFolderAsync: Screening ${mails.length} mails from ${folder}`)
     for (let i = 0; i < mails.length; i++) {
       const mail = mails[i]
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
@@ -73,6 +74,7 @@ export class Screener {
         }
       }
     }
+    this.deps.log.debug(`moveMailsInFolderAsync: Done screening ${mails.length} mails from ${folder}`)
   }
 
   private async determineChanges(mails: IDictionary<IMail[]>) {
@@ -80,6 +82,7 @@ export class Screener {
 
     for (let i = 0; i < this.deps.folders.aliases.length; i++) {
       const alias = this.deps.folders.aliases[i];
+      this.deps.log.debug(`determineChanges: Started for ${alias}`)
       // We don't learn what goes into "for screening": it's a default behavior
       // for senders that are not yet known.
       if (alias !== FOR_SCREENING_FOLDER_ALIAS) {
@@ -87,6 +90,7 @@ export class Screener {
         changes = changes.concat(await this.screenFolder(mails[screeningFolder],
           { result: ScreeningResultType.TargetFolder, targetFolderAlias: alias }));
       }
+      this.deps.log.debug(`determineChanges: Done for ${alias}`)
     }
 
     await this.applyGuidelineChanges(changes);
@@ -94,13 +98,15 @@ export class Screener {
 
   private applyGuidelineChanges = async (changes: ScreeningGuidelineChange[]) => {
     await Promise.all(changes.map(async change =>
-      await this.deps.senderScreeningProvider.addScreeningGuidelineAsync(change.sender, change.newGuideline)
+      {
+        this.deps.log.debug(`applyGuidelineChanges: Applying guideline change for ${change.sender}: ${change.newGuideline}`)
+        await this.deps.senderScreeningProvider.addScreeningGuidelineAsync(change.sender, change.newGuideline)
+      }
     ))
   }
 
   ScreenMailAsync = async (): Promise<void> => {
     await this.deps.mailbox.connectAsync()
-
     try {
       const mails: IDictionary<IMail[]> = await this.fetchAllMailsAsync();
       await this.determineChanges(mails);
@@ -115,11 +121,16 @@ export class Screener {
     const mails: IDictionary<IMail[]> = {};
     for (let i = 0; i < this.deps.folders.aliases.length; i++) {
       const alias = this.deps.folders.aliases[i];
+      this.deps.log.debug(`fetchAllMailsAsync: started for ${alias}`);
       const folder = this.deps.folders.folders[alias];
       mails[folder.folder] = await this.deps.mailbox.getMailAsync(folder.folder);
+      this.deps.log.debug(`fetchAllMailsAsync: Fetched ${mails[folder.folder]} mails`);
       if (folder.screeningFolder !== folder.folder) {
+        this.deps.log.debug(`fetchAllMailsAsync: Fetching screening folder for ${alias} (${folder.screeningFolder})`);
         mails[folder.screeningFolder] = await this.deps.mailbox.getMailAsync(folder.screeningFolder);
+        this.deps.log.debug(`fetchAllMailsAsync: Fetched ${mails[folder.screeningFolder]} in screened`);
       }
+      this.deps.log.debug(`fetchAllMailsAsync: done for ${alias}`);
     }
     return mails;
   }

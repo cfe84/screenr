@@ -7,6 +7,9 @@ export class FileLogger implements ILogger {
     const message = `${level} - ${new Date()} - ${messages.join(" ")}\n`
     fs.appendFileSync(this.logFile, message);
   }
+  debug(...messages: string[]): void {
+    this.logMsg("DEBUG  ", ...messages)
+  }
   log(...messages: string[]): void {
     this.logMsg("LOG    ", ...messages)
   }
