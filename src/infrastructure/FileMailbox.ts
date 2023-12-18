@@ -11,7 +11,7 @@ export interface FileMailboxProps {
   rootFolder: string,
 }
 
-type Cache = Record<number, string>;
+type Cache = Record<string, string>;
 
 const cacheFile = "screenr_cache.json";
 
@@ -37,8 +37,9 @@ export class FileMailbox implements IMailbox {
         continue;
       }
       const mail: IMail = { mailId: file, sender: "" };
-      if (cache[mailId]) {
-        mail.sender = cache[mailId];
+      const cached = cache[mailId.toString()];
+      if (cached) {
+        mail.sender = cached;
       } else {
         const location = path.join(folder, file);
         const content = fs.readFileSync(location);
@@ -78,8 +79,9 @@ export class FileMailbox implements IMailbox {
     return cache;
   }
 
-  private getCacheFilePath(inFolder: string) {
-    return path.join(this.props.rootFolder, inFolder, cacheFile);
+  private getCacheFilePath(folder: string) {
+    folder = this.removeInboxFromFolder(folder);
+    return path.join(this.props.rootFolder, folder, cacheFile);
   }
 
   private getFolder(folder: string): string {
