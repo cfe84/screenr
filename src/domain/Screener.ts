@@ -128,7 +128,7 @@ export class Screener {
       if (folder.screeningFolder !== folder.folder) {
         this.deps.log.debug(`fetchAllMailsAsync: Fetching screening folder for ${alias} (${folder.screeningFolder})`);
         mails[folder.screeningFolder] = await this.deps.mailbox.getMailAsync(folder.screeningFolder);
-        this.deps.log.debug(`fetchAllMailsAsync: Fetched ${mails[folder.screeningFolder]} in screened`);
+        this.deps.log.debug(`fetchAllMailsAsync: Fetched ${mails[folder.screeningFolder].length} in screened`);
       }
       this.deps.log.debug(`fetchAllMailsAsync: done for ${alias}`);
     }
