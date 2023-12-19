@@ -35,6 +35,7 @@ interface SpamConfig {
   "recycleBox": string,
   "trainingFrequencyHours": number,
   "trainingDatasetSizeLimit": number,
+  "rootFolder"?: string,
 }
 
 interface AppConfig {
@@ -110,9 +111,10 @@ export class App {
 
     if (this.config.spam)
     {
+      const spamMailbox = this.config.spam.rootFolder ? new FileMailbox({rootFolder: this.config.spam.rootFolder}) : mailbox;
       const spamTrainingStore = new FileSpamTrainingStore(path.join(this.config.storageFolder, "spam.json"))
       const deps: SpamDetectorDeps = {
-        mailbox,
+        mailbox: spamMailbox,
         log,
         spamTrainingProvider: spamTrainingStore
       }
