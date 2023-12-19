@@ -108,12 +108,13 @@ export class SpamDetector {
   }
 
   private async trainOnMailboxAsync(mailboxes: string[]): Promise<ISpamTrainingDataset> {
+    this.deps.log.log(`trainOnMailboxAsync: Start training on ${mailboxes.join(", ")}`)
     const map: Record<string, number> = {};
     let trainingDatasetSize = 0;
     for(let mailbox of mailboxes) {
       const mails = await this.deps.mailbox.getMailAsync(mailbox);
       for (let i = 0; i < mails.length; i += chunkSize) {
-        this.deps.log.log(`Training on ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
+        this.deps.log.log(`trainOnMailboxAsync: Training on ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
         const chunk = mails.slice(i, i + chunkSize);
         try {
           const mailContents = await this.deps.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
@@ -126,11 +127,12 @@ export class SpamDetector {
           this.deps.log.error(`${error}`);
         }
         if (this.trainingDatasetSizeLimit && trainingDatasetSize >= this.trainingDatasetSizeLimit) {
-          this.deps.log.warn(`Training dataset size limit reached: ${trainingDatasetSize}`)
+          this.deps.log.warn(`trainOnMailboxAsync: Training dataset size limit reached: ${trainingDatasetSize}`)
           break;
         }
       }
     }
+    this.deps.log.log(`trainOnMailboxAsync: Finished training on ${mailboxes.join(", ")}`)
     return {map, trainingDatasetSize};
   }
 
