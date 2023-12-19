@@ -136,6 +136,7 @@ export class Screener {
         const content = await this.deps.mailbox.getMailContentAsync(folder, [mailId]);
         const isSpam = await this.deps.spamDetector.detectSpamAsync(content[0]);
         if (isSpam) {
+          this.deps.log.debug(`getFolderForScreeningResult: ${mailId} detected as spam.`);
           return this.spamFolder;
         }
       }
