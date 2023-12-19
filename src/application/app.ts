@@ -125,7 +125,7 @@ export class App {
       senderScreeningProvider,
       log,
       spamDetector
-    });
+    }, this.config.spam?.recycleBox);
 
     const screenAsync = async () => {
       try {
