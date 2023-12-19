@@ -113,9 +113,11 @@ export class SpamDetector {
     let trainingDatasetSize = 0;
     for(let mailbox of mailboxes) {
       const mails = await this.deps.mailbox.getMailAsync(mailbox);
-      for (let i = 0; i < mails.length; i += chunkSize) {
-        this.deps.log.log(`trainOnMailboxAsync: Training on ${mailbox} messages ${i} to ${i + chunkSize} of ${mails.length}`)
-        const chunk = mails.slice(i, i + chunkSize);
+      // Go from newest to oldest
+      for (let i = mails.length - 1; i > 0; i -= chunkSize) {
+        const start = Math.max(0, i - chunkSize);
+        this.deps.log.log(`trainOnMailboxAsync: Training on ${mailbox} messages ${start} to ${i} of ${mails.length}`)
+        const chunk = mails.slice(start, i);
         try {
           const mailContents = await this.deps.mailbox.getMailContentAsync(mailbox, chunk.map(mail => mail.mailId));
           for (let j = 0; j < mailContents.length; j++) {
