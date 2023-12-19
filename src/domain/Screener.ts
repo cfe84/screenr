@@ -22,7 +22,7 @@ interface ScreeningGuidelineChange {
 }
 
 export class Screener {
-  constructor(private deps: IScreenerDeps) {}
+  constructor(private deps: IScreenerDeps, private spamFolder?: string) {}
 
   ScreenMailAsync = async (): Promise<void> => {
     await this.deps.mailbox.connectAsync()
@@ -112,15 +112,15 @@ export class Screener {
     await this.moveMailsInFolderAsync(inboxFolder, mails[inboxFolder]);
   }
 
-  private moveMailsInFolderAsync = async (folder: Folder, mails: IMail[]): Promise<void> => {
+  private async moveMailsInFolderAsync(folder: Folder, mails: IMail[]): Promise<void> {
     this.deps.log.debug(`moveMailsInFolderAsync: ${folder} - screening ${mails.length} mails`)
     for (let i = 0; i < mails.length; i++) {
       const mail = mails[i]
       const screeningResult = await this.deps.senderScreeningProvider.getScreeningResultAsync(mail.sender)
-      const targetFolder = this.getFolderForScreeningResult(screeningResult)
+      const targetFolder = await this.getFolderForScreeningResult(screeningResult, folder, mail.mailId);
       if (folder !== targetFolder) {
         try {
-          await this.deps.mailbox.moveMailAsync(mail.mailId, folder, targetFolder)
+          await this.deps.mailbox.moveMailAsync(mail.mailId, folder, targetFolder);
         }
         catch (error) {
           this.deps.log.error(`moveMailsInFolderAsync: Couldn't move ${mail.mailId} sent by ${mail.sender} from ${folder} to ${targetFolder}: ${error}.`)
@@ -130,8 +130,15 @@ export class Screener {
     this.deps.log.debug(`moveMailsInFolderAsync: ${folder} - done screening ${mails.length} mails`)
   }
 
-  private getFolderForScreeningResult(screeningResult: ScreeningResult): Folder {
+  private async getFolderForScreeningResult(screeningResult: ScreeningResult, folder: string, mailId: string): Promise<Folder> {
     if (screeningResult.result === ScreeningResultType.RequiresManualScreening) {
+      if (this.spamFolder && this.deps.spamDetector) {
+        const content = await this.deps.mailbox.getMailContentAsync(folder, [mailId]);
+        const isSpam = await this.deps.spamDetector.detectSpamAsync(content[0]);
+        if (isSpam) {
+          return this.spamFolder;
+        }
+      }
       return this.deps.folders.folders[FOR_SCREENING_FOLDER_ALIAS].folder
     } else {
       return this.deps.folders.folders[screeningResult.targetFolderAlias as string].folder
