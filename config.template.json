@@ -25,6 +25,13 @@
     "Reference": "INBOX.Reference",
     "Rejected": "INBOX.Rejected"
   },
+  "spam": {
+    "isSpam": "INBOX.Junk",
+    "isHam": "INBOX",
+    "recycleBox": "INBOX.SuspectedSpam",
+    "trainingFrequencyMinutes": 60,
+    "trainingDatasetSizeLimit": 10000
+  },
   "storageFolder": "./",
   "pollFrequencySeconds": 5
 }

@@ -11,6 +11,8 @@ Screenr learns from you, and will direct all future mail based on how you've scr
 
 You can change your mind later by just moving a mail from someone into another folder.
 
+Screenr also includes a built-in spam filter.
+
 ## How it works
 
 It connects to an IMAP server using your credentials, and screens your mail several times a minute. It saves what it learns into a local file.
@@ -20,6 +22,10 @@ For each folder you specify:
 2. A screening folder (e.g. `Classify in Reference`)
 
 You can use a shortcut and specify the screening folder to be directly the target folder. The advantage of doing so is simplicity. The downside is that it will forbid you from classifying a random email into a given folder without re-directing all of the sender's mail directly there. For `Reference` mail, for example, it's probably a good idea to keep the _target_ and the _screening_ folder distinct, so you can move some of your usual contact's mail that you normally want in your _inbox_ back into your _reference_ folder.
+
+### Spam detection
+
+Spam detection works by comparing incoming emails from unknown senders to known ham (good emails) and spam. Screenr doesn't come with any pre-training, and fully uses the spam and ham _you_ receive to make a call on whether that email is a spam. That technique works relatively well, and achieves empirical success > 95%. It's especially good when you receive the same type of spam often, and it will never categorize an email from a sender you screened as junk. 
 
 ## Running it
 
@@ -50,6 +56,26 @@ To select the client you want to use, only keep this one in the configuration fi
 - `imap.ssl` indicates whether you want to use secured transport layer. Default is false
 - `imap.ca` allows you to set a CA root certificate for secured transport layer. Default is null.
 - `imap.validateCertificate` and `imapSimple.validateCertificate` indicate if you require a validate certificate. Default is true. This is useful if you have trouble with the local certificate store (e.g. `Error: unable to get local issuer certificate`), however not recommended for obvious security reasons.
+
+### Configure the spam filter
+
+Optionally you can turn on Screenr's spam filter. You do so by adding the following config key:
+
+```json
+  "spam": {
+    "isSpam": "INBOX.Junk",
+    "isHam": "INBOX",
+    "recycleBox": "INBOX.SuspectedSpam",
+    "trainingFrequencyMinutes": 60,
+    "trainingDatasetSizeLimit": 10000
+  },
+```
+
+- `isSpam` is the folder where you store your spam (This means that you should stop deleting it, so that it can be used for training)
+- `isHam` is a folder that can be used as a reference for good emails, such as an archive folder.
+- `recycleBox` is when Screenr will put emails it thinks are spam. Once you review these, move them to the spam folder to reinforce the training. You _can_ put your spam folder as the recycle box, but I strongly advise having two separate ones at first to validate it works for you.
+- `frequency` is how often the training happens
+- `datasetSizeLimit` is how many emails are used for training. The larger the set, the stronger the result, but the more storage and memory it will require.
 
 ## Features
 
